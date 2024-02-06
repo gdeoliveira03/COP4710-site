@@ -23,3 +23,15 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 })
+
+//check db
+app.get('/checkdb', async (req, res) => {
+    try {
+        const client = await pool.connect();
+        res.status(200).json({ success: true, message: 'Database connected successfully' });
+        client.release();
+    } catch (error) {
+        console.error('Error connecting to the database:', error);
+        res.status(500).json({ success: false, message: 'Unable to connect to the database'});
+    }
+});
