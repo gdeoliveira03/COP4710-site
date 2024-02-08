@@ -36,13 +36,24 @@ app.get('/checkdb', async (req, res) => {
     }
 });
 
-// Signup endpoint
+///////////////////////////////////////Signup endpoint//////////////////////////////////////////////////////
 app.post('/signup', async (req, res) => {
   const { username, password, email, userType } = req.body;
 
   if (!username || !password || !email || !userType) {
       return res.status(400).json({ success: false, message: 'All fields are required' });
   }
+
+  //user can only be 1 of 3 types
+  const validUserTypes = ['student', 'admin', 'superAdmin'];
+  if (!validUserTypes.includes(userType)) {
+    return res.status(400).json({ success: false, message: 'Invalid userType' });
+  }
+
+    // Check if the userType is 'student' and if the email is a valid .edu address
+    if (userType === 'student' && !email.endsWith('.edu')) {
+        return res.status(400).json({ success: false, message: 'Student users must have a valid .edu email address' });
+    }
 
   try {
 
@@ -68,7 +79,7 @@ app.post('/signup', async (req, res) => {
   }
 });
 
-// login endpoint
+////////////////////////////////////////////// login endpoint////////////////////////////////////////////////
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -91,7 +102,21 @@ app.post('/login', async (req, res) => {
           return res.status(401).json({ success: false, message: 'Invalid username or password' });
       }
 
-      res.status(200).json({ success: true, userId: user.id });
+        // extract university from email
+        const email = user.rows[0].email;
+        const university = email.substring(email.lastIndexOf('@') + 1, email.lastIndexOf('.edu'));
+
+        // return user type and email
+        res.status(200).json({
+        success: true,
+        user: {
+            id: user.rows[0].id,
+            username: user.rows[0].username,
+            email: user.rows[0].email,
+            userType: user.rows[0].user_type,
+            university: university
+        }
+    });
   } catch (error) {
       console.error('Error logging in:', error);
       res.status(500).json({ success: false, message: 'Error logging in' });
