@@ -87,7 +87,7 @@ app.post('/login', async (req, res) => {
   try {
       // Retrieve user from the database
       const result = await pool.query(
-          'SELECT user_id, username, password FROM users WHERE username = $1',
+          'SELECT username, password, email, user_type FROM users WHERE username = $1',
           [username]
       );
 
@@ -104,16 +104,17 @@ app.post('/login', async (req, res) => {
       }
 
       // extract university from email - should be implemented, WIP
-      //const email = user.email;
-      //const atIndex = email.indexOf('@');
-      //const dotIndex = email.indexOf('.edu');
+      const email = user.email;
+      var university = "";
+      const atIndex = email.indexOf('@');
+      const dotIndex = email.indexOf('.edu');
 
       // Check if both indices are found before extracting the substring
-      //if (atIndex !== -1 && dotIndex !== -1) {
-        //const university = email.substring(atIndex + 1, dotIndex);
-      //} else {
-        //console.error("Email is not in the expected format");
-      //}   
+      if (atIndex !== -1 && dotIndex !== -1) {
+        university = email.substring(atIndex + 1, dotIndex);
+      } else {
+        console.error("Email is not in the expected format");
+      }   
 
       // return user type and email
       res.status(200).json({
@@ -122,11 +123,65 @@ app.post('/login', async (req, res) => {
           username: user.username,
           email: user.email,
           userType: user.user_type,
-          //university: university
+          university: university
       }
     });
   } catch (error) {
       console.error('Error logging in:', error);
       res.status(500).json({ success: false, message: 'Error logging in' });
+  }
+});
+
+///////////////////////////////////////////// Endpoint to delete a user/////////////////////////////////////////
+app.delete('/delete_user/:user_id', async (req, res) => {
+  const { user_id } = req.params;
+  const { password } = req.body;
+
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE user_id = $1', [user_id]);
+    const user = result.rows[0];
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    if (bcrypt.compare(password, user.password)) {
+      await pool.query('DELETE FROM users WHERE user_id = $1', [user_id]);
+      res.json({ message: "User deleted successfully" });
+    } else {
+      res.status(401).json({ error: "Incorrect password" });
+    }
+
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Endpoint to update user_id
+app.put('/update_username/:user_id', async (req, res) => {
+  const { user_id } = req.params;
+  const { old_username, new_username, password } = req.body;
+
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE user_id = $1', [user_id]);
+    const user = result.rows[0];
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    if (bcrypt.compare(password, user.password)) {
+      await pool.query('UPDATE users SET username = $1 WHERE username = $2', [new_username, old_username]);
+      res.json({ message: "User ID updated successfully" });
+    } else {
+      res.status(401).json({ error: "Incorrect password" });
+    }
+
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
