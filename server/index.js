@@ -159,7 +159,7 @@ app.delete('/delete_user/:user_id', async (req, res) => {
   }
 });
 
-// Endpoint to update user_id
+////////////////////////////////////////////////////Endpoint to edit username/////////////////////////////////
 app.put('/update_username/:user_id', async (req, res) => {
   const { user_id } = req.params;
   const { old_username, new_username, password } = req.body;
@@ -183,5 +183,168 @@ app.put('/update_username/:user_id', async (req, res) => {
   } catch (err) {
     console.error('Error executing query', err);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Middleware to check if user is an admin or superadmin
+const isAdmin = async (req, res, next) => {
+  const { admin_id } = req.body;
+  
+  try {
+    const result = await pool.query('SELECT user_type FROM users WHERE user_id = $1', [admin_id]);
+    var isAdmin = false;
+    if(result.rows[0]?.user_type == "admin"){
+      isAdmin = true;
+    }
+    
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Only admins can create events" });
+    }
+    
+    next();
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const isSuperAdmin = async (req, res, next) => {
+  const { admin_id } = req.body;
+  
+  try {
+    const result = await pool.query('SELECT user_type FROM users WHERE user_id = $1', [admin_id]);
+    var isAdmin = false;
+    if(result.rows[0]?.user_type == "superAdmin"){
+      isAdmin = true;
+    }
+    
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Only superAdmins can do this action" });
+    }
+    
+    next();
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+//////////////////////////////////////////Event creation//////////////////////////////////////////////
+app.post('/create_event', isAdmin, async (req, res) => {
+  const { name, category, description, date, time, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event } = req.body;
+
+  try {
+    const result = await pool.query('INSERT INTO events (name, category, description, date, time, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
+      [name, category, description, date, time, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event]);
+    
+    const createdEvent = result.rows[0];
+    res.json({ message: "Event created successfully", event: createdEvent });
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+  }
+});
+
+/////////////////////////////////////////////Event Gets - public, private, rso////////////////////////////////////////////////////
+app.get('/public_events', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM events WHERE is_public = true');
+    const events = result.rows;
+    res.json(events);
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.get('/private_events/:university_id', async (req, res) => {
+  const { university_id } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM events WHERE is_public = false AND university_id = $1', [university_id]);
+    const events = result.rows;
+    res.json(events);
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.get('/rso_events', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM events WHERE is_rso_event = true');
+    const events = result.rows;
+    res.json(events);
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+///////////////////////////////////////////////Endpoint to get an event by ID/////////////////////////////////
+app.get('/get_event/:event_id', async (req, res) => {
+  const { event_id } = req.params;
+
+  try {
+    const result = await pool.query('SELECT * FROM events WHERE event_id = $1', [event_id]);
+    const event = result.rows[0];
+
+    if (!event) {
+      res.status(404).json({ error: "Event not found" });
+    } else {
+      res.json(event);
+    }
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+
+  }
+});
+
+///////////////////////////////////////////////Endpoint to update an event////////////////////////////////////////
+app.put('/update_event/:event_id', async (req, res) => {
+  const { event_id } = req.params;
+  const { name, category, description, date, time, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event } = req.body;
+
+  try {
+    const result = await pool.query('UPDATE events SET name = $1, category = $2, description = $3, date = $4, time = $5, location = $6, contact_phone = $7, contact_email = $8, university_id = $9, admin_id = $10, is_public = $11, is_rso_event = $12 WHERE event_id = $13 RETURNING *',
+      [name, category, description, date, time, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event, event_id]);
+    
+    const updatedEvent = result.rows[0];
+
+    if (!updatedEvent) {
+      res.status(404).json({ error: "Event not found" });
+    } else {
+      res.json({ message: "Event updated successfully", event: updatedEvent });
+    }
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    
+  }
+});
+
+/////////////////////////////////////////////Endpoint Event Deletion/////////////////////////////////////////////////
+app.delete('/delete_event/:event_id', async (req, res) => {
+
+  const { event_id } = req.params;
+
+  try {
+    const result = await pool.query('DELETE FROM events WHERE event_id = $1 RETURNING *', [event_id]);
+    const deletedEvent = result.rows[0];
+
+    if (!deletedEvent) {
+      res.status(404).json({ error: "Event not found" });
+    } else {
+      res.json({ message: "Event deleted successfully", event: deletedEvent });
+    }
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    
   }
 });
