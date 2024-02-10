@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -58,7 +59,7 @@ app.post('/signup', async (req, res) => {
   try {
 
     // Check if the username already exists
-    const existingUser = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+    const existingUser = await pool.query('SELECT user_id FROM users WHERE username = $1', [username]);
     if (existingUser.rows.length > 0) {
       return res.status(400).json({ success: false, message: 'Username already exists' });
     }
@@ -68,7 +69,7 @@ app.post('/signup', async (req, res) => {
 
     // Insert user into the database
     const result = await pool.query(
-      'INSERT INTO users (username, password, email, user_type) VALUES ($1, $2, $3, $4) RETURNING id',
+      'INSERT INTO users (username, password, email, user_type) VALUES ($1, $2, $3, $4) RETURNING user_id',
       [username, hashedPassword, email, userType]
     );
     res.status(201).json({ success: true, userId: result.rows[0].id });
@@ -86,36 +87,43 @@ app.post('/login', async (req, res) => {
   try {
       // Retrieve user from the database
       const result = await pool.query(
-          'SELECT id, username, password FROM users WHERE username = $1',
+          'SELECT user_id, username, password FROM users WHERE username = $1',
           [username]
       );
 
       if (result.rows.length === 0) {
-          return res.status(401).json({ success: false, message: 'Invalid username or password' });
+          return res.status(401).json({ success: false, message: 'User not found' });
       }
 
       // Compare passwords
       const user = result.rows[0];
-      const passwordMatch = await bcrypt.compare(password, user.password);
+      var passwordMatch = await bcrypt.compare(password, user.password);
 
       if (!passwordMatch) {
-          return res.status(401).json({ success: false, message: 'Invalid username or password' });
+          return res.status(401).json({ success: false, message: 'Invalid password'});
       }
 
-        // extract university from email
-        const email = user.rows[0].email;
-        const university = email.substring(email.lastIndexOf('@') + 1, email.lastIndexOf('.edu'));
+      // extract university from email - should be implemented, WIP
+      //const email = user.email;
+      //const atIndex = email.indexOf('@');
+      //const dotIndex = email.indexOf('.edu');
 
-        // return user type and email
-        res.status(200).json({
-        success: true,
-        user: {
-            id: user.rows[0].id,
-            username: user.rows[0].username,
-            email: user.rows[0].email,
-            userType: user.rows[0].user_type,
-            university: university
-        }
+      // Check if both indices are found before extracting the substring
+      //if (atIndex !== -1 && dotIndex !== -1) {
+        //const university = email.substring(atIndex + 1, dotIndex);
+      //} else {
+        //console.error("Email is not in the expected format");
+      //}   
+
+      // return user type and email
+      res.status(200).json({
+      success: true,
+      user: {
+          username: user.username,
+          email: user.email,
+          userType: user.user_type,
+          //university: university
+      }
     });
   } catch (error) {
       console.error('Error logging in:', error);
