@@ -348,3 +348,72 @@ app.delete('/delete_event/:event_id', async (req, res) => {
     
   }
 });
+
+////////////////////////////////////////////Create University////////////////////////////////////////////////
+app.post('/add_university', isSuperAdmin, async (req, res) => {
+  const { name, location, description, num_students, pictures, superadmin_id} = req.body;
+
+  try {
+    const result = await pool.query('INSERT INTO universities (name, location, description, num_students, pictures) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [name, location, description, num_students, pictures]);
+    
+    const createdUniversity = result.rows[0];
+    res.json({ message: "University created successfully", university: createdUniversity });
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/////////////////////////////////////////////Get Universities//////////////////////////////////////////
+app.get('/universities', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM universities');
+    const universities = result.rows;
+    res.json(universities);
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+///////////////////////////////////////////Update Uni Info//////////////////////////////////////////////
+app.put('/update_university/:university_id', async (req, res) => {
+  const { university_id } = req.params;
+  const { name, location, description, num_students, pictures } = req.body;
+
+  try {
+    const result = await pool.query('UPDATE universities SET name = $1, location = $2, description = $3, num_students = $4, pictures = $5 WHERE university_id = $6 RETURNING *',
+      [name, location, description, num_students, pictures, university_id]);
+    
+    const updatedUniversity = result.rows[0];
+
+    if (!updatedUniversity) {
+      res.status(404).json({ error: "University not found" });
+    } else {
+      res.json({ message: "University updated successfully", university: updatedUniversity });
+    }
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+////////////////////////////////////////////Delete university///////////////////////////////////////////
+app.delete('/delete_university/:university_id', async (req, res) => {
+  const { university_id } = req.params;
+
+  try {
+    const result = await pool.query('DELETE FROM universities WHERE university_id = $1 RETURNING *', [university_id]);
+    const deletedUniversity = result.rows[0];
+
+    if (!deletedUniversity) {
+      res.status(404).json({ error: "University not found" });
+    } else {
+      res.json({ message: "University deleted successfully", university: deletedUniversity });
+    }
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
