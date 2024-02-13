@@ -186,7 +186,7 @@ app.put('/update_username/:user_id', async (req, res) => {
   }
 });
 
-// Middleware to check if user is an admin or superadmin
+// Middleware 
 const isAdmin = async (req, res, next) => {
   const { admin_id } = req.body;
   
@@ -209,10 +209,10 @@ const isAdmin = async (req, res, next) => {
 };
 
 const isSuperAdmin = async (req, res, next) => {
-  const { admin_id } = req.body;
+  const { superadmin_id } = req.body;
   
   try {
-    const result = await pool.query('SELECT user_type FROM users WHERE user_id = $1', [admin_id]);
+    const result = await pool.query('SELECT user_type FROM users WHERE user_id = $1', [superadmin_id]);
     var isAdmin = false;
     if(result.rows[0]?.user_type == "superAdmin"){
       isAdmin = true;
@@ -228,6 +228,11 @@ const isSuperAdmin = async (req, res, next) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+function validateRating(rating) {
+  // Ensure rating is within the range of 1 to 5
+  return Math.max(1, Math.min(5, rating));
+}
 
 //////////////////////////////////////////Event creation//////////////////////////////////////////////
 app.post('/create_event', isAdmin, async (req, res) => {
@@ -333,6 +338,9 @@ app.delete('/delete_event/:event_id', async (req, res) => {
   const { event_id } = req.params;
 
   try {
+
+    await pool.query('DELETE FROM comments WHERE event_id = $1', [event_id]); //delete all related comments
+
     const result = await pool.query('DELETE FROM events WHERE event_id = $1 RETURNING *', [event_id]);
     const deletedEvent = result.rows[0];
 
@@ -414,6 +422,71 @@ app.delete('/delete_university/:university_id', async (req, res) => {
     }
   } catch (err) {
     console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+////////////////////////////////////////// CREATE a comment///////////////////////////////////////////////
+app.post('/create_comment', async (req, res) => {
+  const { user_id, event_id, content, rating } = req.body;
+  const validatedRating = validateRating(rating); // Validate the rating
+  const created_at = new Date(); // Assuming server time
+
+  try {
+
+    const eventResult = await pool.query('SELECT * FROM events WHERE event_id = $1', [event_id]);
+    const event = eventResult.rows[0];
+    
+    if (!event) {
+      // If the event doesn't exist, send an error message
+      res.status(404).json({ error: "Event not found" });
+    }
+
+    const result = await pool.query(
+      'INSERT INTO comments (user_id, event_id, content, rating, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [user_id, event_id, content, validatedRating, created_at]
+    );
+
+    const createdComment = result.rows[0];
+    res.json({ message: "Comment created successfully", comment: createdComment });
+  } catch (err) {
+    console.error('Error creating comment', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+///////////////////////////////////////////////////////READ comments///////////////////////////////////////
+app.get('/get_comments/:event_id', async (req, res) => {
+  const { event_id } = req.params;
+
+  try {
+    const eventResult = await pool.query('SELECT * FROM events WHERE event_id = $1', [event_id]);
+    const event = eventResult.rows[0];
+    
+    if (!event) {
+      // If the event doesn't exist, send an error message
+      res.status(404).json({ error: "Event not found" });
+    } else {
+      // If the event exists, retrieve comments for the event
+      const commentResult = await pool.query('SELECT * FROM comments WHERE event_id = $1', [event_id]);
+      const comments = commentResult.rows;
+      res.json(comments);
+    }
+  } catch (err) {
+    console.error('Error retrieving comments', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+////////////////////////////////////////////////////////DELETE a comment/////////////////////////////////////
+app.delete('/delete_comment/:comment_id', async (req, res) => {
+  const { comment_id } = req.params;
+
+  try {
+    await pool.query('DELETE FROM comments WHERE comment_id = $1', [comment_id]);
+    res.json({ message: "Comment deleted successfully" });
+  } catch (err) {
+    console.error('Error deleting comment', err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
