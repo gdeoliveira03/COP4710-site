@@ -597,10 +597,15 @@ app.post('/rsos/:rso_id/join', async (req, res) => {
 
     // Query the universities table to find the university_id
     const universityQuery = await pool.query('SELECT university_id FROM universities WHERE nickname = $1', [universityNickname]);
+    
+    if (!universityQuery.rows[0]) {
+      return res.status(404).json({ error: "University not found"});
+    }
+    
     const universityId = universityQuery.rows[0].university_id;
 
     if (!universityId) {
-      return res.status(404).json({ error: "University not found" });
+      return res.status(404).json({ error: "University not found"});
     }
 
     // Validate if rso_id exists
@@ -614,9 +619,9 @@ app.post('/rsos/:rso_id/join', async (req, res) => {
     const membershipQuery = await pool.query('SELECT COUNT(*) FROM rso_memberships rm INNER JOIN rsos r ON rm.rso_id = r.rso_id WHERE rm.user_id = $1 AND r.university_id = $2',
       [user_id, universityId]);
     
-    const isMemberOfSameUniversity = membershipQuery.rows[0].count > 0;
+    const isMemberOfSameUniversity = membershipQuery.rows[0].count;
     if (!isMemberOfSameUniversity) {
-      return res.status(403).json({ error: "User does not belong to the same university as the RSO" });
+      return res.status(403).json({ error: "User does not belong to the same university as the RSO", isMemberOfSameUniversity});
     }
 
     await pool.query('INSERT INTO rso_memberships (rso_id, user_id) VALUES ($1, $2)',
@@ -676,22 +681,22 @@ app.put('/rsos/:rso_id', async (req, res) => {
   }
 });
 
-// 5. Delete RSO
+///////////////////////////////////////////////////////////////DELETE RSO/////////////////////////////////////////
 app.delete('/rsos/:rso_id', async (req, res) => {
   const { rso_id } = req.params;
 
   try {
-    // Validate if rso_id exists
-    const rsoQuery = await pool.query('SELECT COUNT(*) FROM rsos WHERE rso_id = $1', [rso_id]);
-    const rsoExists = rsoQuery.rows[0].count > 0;
-    if (!rsoExists) {
-      return res.status(404).json({ error: "RSO not found" });
-    }
+    await pool.query('BEGIN');
+    // Delete related memberships first
+    await pool.query('DELETE FROM rso_memberships WHERE rso_id = $1', [rso_id]);
 
+    // Then delete the RSO
     await pool.query('DELETE FROM rsos WHERE rso_id = $1', [rso_id]);
 
+    await pool.query('COMMIT');
     res.json({ message: "RSO deleted successfully" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error('Error deleting RSO', err);
     res.status(500).json({ error: "Internal server error" });
   }
