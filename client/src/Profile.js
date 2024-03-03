@@ -1,24 +1,17 @@
 import React from 'react';
-import { useUser } from './UserContext';
+import { useParams } from 'react-router-dom';
 
-const ProfileComponent = () => {
-  // Access user context using the useUser hook
-  const { user } = useUser();
+const Profile = () => {
+
+  const { username } = useParams();
 
   return (
     <div>
-      {user ? (
-        user.hasOwnProperty('username') ? (
-          <p>Welcome, {user.username}!</p>
-        ) : (
-          <p>Username not found in user object.</p>
-        )
-      ) : (
-        <p>Please log in to view your profile.</p>
-      )}
+      <h2>Profile</h2>
+      <p>Username: {username}</p>
+
     </div>
   );
 };
 
-export default ProfileComponent;
-
+export default Profile;
