@@ -1,11 +1,16 @@
-// Dashboard.js
-import React,{Fragment} from 'react';
+import React from 'react';
+import { useUser } from './UserContext'; // Import useUser hook
 
 const Dashboard = () => {
+  const { user } = useUser();
+
+  console.log(user); // Log the user information to the console
+
   return (
-    <Fragment>
-        <h1>Dashboard</h1>
-    </Fragment>
+    <div>
+      <h2>Dashboard</h2>
+      <p>Welcome, {user ? user.username : 'Guest'}!</p>
+    </div>
   );
 };
 
