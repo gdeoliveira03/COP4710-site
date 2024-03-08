@@ -6,7 +6,7 @@ const Dashboard = () => {
 
   return (
     <div>
-      <h2>Dashboard</h2>
+      <h1>Dashboard</h1>
       {user && (
         <p>Welcome, {user.name}!</p>
       )}

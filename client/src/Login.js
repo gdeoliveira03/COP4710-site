@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useUser } from './UserContext';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { setUser } = useUser();
+
 
   const handleLogin = async () => {
     setError('');
@@ -26,7 +30,8 @@ const Login = () => {
       }
 
       // If login successful, navigate to Profile with username as URL parameter
-      navigate(`/dashboard/${username}`);
+      setUser({ name: username });
+      navigate('/dashboard');
     } catch (error) {
       console.error('Error:', error);
       setError('An unexpected error occurred');
@@ -46,6 +51,7 @@ const Login = () => {
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
       <button onClick={handleLogin}>Login</button>
+      <Link to="/register">Sign up today!</Link>
     </div>
   );
 };

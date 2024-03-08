@@ -12,6 +12,16 @@ import UniList from './UniList';
 import CreateComment from './CreateComment';
 import DeleteComment from './DeleteComment';
 import ReadComments from './ReadComments';
+import { Link } from 'react-router-dom';
+
+function LandingPage() {
+  return (
+    <div>
+      <h1>Welcome to MyApp</h1>
+      <p>Please <Link to="/login">login</Link> or <Link to="/register">register</Link> to continue.</p>
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -19,6 +29,7 @@ function App() {
       <UserProvider>
         {
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -30,9 +41,6 @@ function App() {
           <Route path ="CreateComment" element={<CreateComment />} />
           <Route path ="DeleteComment" element={<DeleteComment />} />
           <Route path ="ReadComments" element={<ReadComments />} />
-
-
-
 
         </Routes>
       }
