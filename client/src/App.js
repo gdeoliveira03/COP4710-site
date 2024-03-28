@@ -20,9 +20,10 @@ function LandingPage() {
     <div>
       <h1>Welcome to MyApp</h1>
       <p>Please <Link to="/login">login</Link> or <Link to="/register">register</Link> to continue.</p>
+
     </div>
   );
-}
+};
 
 function App() {
   return (
