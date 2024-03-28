@@ -7,7 +7,7 @@ const UniCreate = () => {
     description: '',
     num_students: '',
     pictures: '',
-    superadmin_id: '' // Assuming this is required
+    superadmin_id: '' 
   });
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');

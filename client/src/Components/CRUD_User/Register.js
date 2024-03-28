@@ -8,7 +8,7 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [userType, setUserType] = useState('');
   const [error, setError] = useState('');
-  const navigate = useNavigate(); // Import useNavigate hook
+  const navigate = useNavigate();
 
   const handleRegister = async () => {
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
