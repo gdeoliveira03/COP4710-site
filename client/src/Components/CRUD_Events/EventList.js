@@ -65,22 +65,6 @@ const EventList = () => {
           </li>
         ))}
       </ul>
-      <h2>Search Event by ID</h2>
-      <form onSubmit={handleSearch}>
-        <label>
-          Event ID:
-          <input type="text" value={eventId} onChange={handleInputChange} />
-        </label>
-        <button type="submit">Search</button>
-      </form>
-      {searchedEvent && (
-        <div>
-          <h3>Event Details</h3>
-          <p><strong>Name:</strong> {searchedEvent.name}</p>
-          <p><strong>Category:</strong> {searchedEvent.category}</p>
-          <p><strong>Description:</strong> {searchedEvent.description}</p>
-        </div>
-      )}
     </div>
   );
 };

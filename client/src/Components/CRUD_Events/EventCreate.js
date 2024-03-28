@@ -5,8 +5,7 @@ const EventCreate = () => {
     name: '',
     category: '',
     description: '',
-    date: '',
-    time: '',
+    timestamp: '',
     location: '',
     contact_phone: '',
     contact_email: '',
@@ -19,17 +18,17 @@ const EventCreate = () => {
   const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prevState => ({
       ...prevState,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/create_event', {
+      const response = await fetch('http://localhost:5000/create_event', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -48,8 +47,7 @@ const EventCreate = () => {
         name: '',
         category: '',
         description: '',
-        date: '',
-        time: '',
+        timestamp: '',
         location: '',
         contact_phone: '',
         contact_email: '',
@@ -83,11 +81,7 @@ const EventCreate = () => {
         </div>
         <div>
           <label>Date:</label>
-          <input type="text" name="date" value={formData.date} onChange={handleChange} required />
-        </div>
-        <div>
-          <label>Time:</label>
-          <input type="text" name="time" value={formData.time} onChange={handleChange} required />
+          <input type="text" name="timestamp" value={formData.timestamp} onChange={handleChange} required />
         </div>
         <div>
           <label>Location:</label>

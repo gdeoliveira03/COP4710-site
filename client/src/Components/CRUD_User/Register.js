@@ -61,7 +61,7 @@ const Register = () => {
           <option value="">Select User Type</option>
           <option value="regular">Student User</option>
           <option value="admin">Admin User</option>
-          <option value="admin">Super Admin User</option>
+          <option value="superAdmin">Super Admin User</option>
         </select>
       </div>
       <button onClick={handleRegister}>Register</button>

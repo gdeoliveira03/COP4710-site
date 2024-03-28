@@ -1,5 +1,6 @@
 import React from 'react';
-import { useUser } from './UserContext'; 
+import { useUser } from './Components/CRUD_User/UserContext'; 
+import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
   const { user } = useUser();
@@ -8,7 +9,17 @@ const Dashboard = () => {
     <div>
       <h1>Dashboard</h1>
       {user && (
-        <p>Welcome, {user.name}!</p>
+        <div>
+          <p>Welcome, {user.name}!</p>
+          {/* Button to create university */}
+          <Link to="/UniCreate">
+            <button>Create University</button>
+          </Link>
+          {/* Button to create event */}
+          <Link to="/EventCreate">
+            <button>Create Event</button>
+          </Link>
+        </div>
       )}
     </div>
   );
