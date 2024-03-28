@@ -235,21 +235,35 @@ function validateRating(rating) {
 }
 
 //////////////////////////////////////////Event creation//////////////////////////////////////////////
-app.post('/create_event', isAdmin, async (req, res) => {
-  const { name, category, description, time, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event } = req.body;
+app.post('/create_event', async (req, res) => {
+  const { name, category, description, timestamp, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event, rso_id } = req.body;
 
   try {
-    const result = await pool.query('INSERT INTO events (name, category, description, timestamp, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
-      [name, category, description, time, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event]);
-    
-    const createdEvent = result.rows[0];
-    res.json({ message: "Event created successfully", event: createdEvent });
-  } catch (err) {
-    console.error('Error executing query', err);
-    res.status(500).json({ error: "Internal server error" });
-  } finally {
-  }
-});
+    if (is_rso_event) {
+      // If it's an RSO event, check if the user is an admin
+      const userResult = await pool.query('SELECT user_type FROM users WHERE user_id = $1', [admin_id]);
+      const userType = userResult.rows[0]?.user_type;
+      if (userType !== 'admin') {
+        return res.status(403).json({ error: "Only admins can create RSO events" });
+      }
+    }
+
+    // If the event is public, add request
+    if (is_public) {
+      await pool.query(
+        'INSERT INTO public_event_requests (name, category, description, timestamp, location, contact_phone, contact_email, university_id, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [name, category, description, timestamp, location, contact_phone, contact_email, university_id, admin_id]
+      );
+      res.json({ message: "Request for public event creation added successfully, to be approved." });
+    } else {
+      //event is rso, made by admin
+      const result = await pool.query(
+        'INSERT INTO events (name, category, description, time, location, contact_phone, contact_email, admin_id, is_public, is_rso_event, rso_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
+        [name, category, description, time, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event, rso_id]
+      );
+      const createdEvent = result.rows[0];
+      res.json({ message: "Event created successfully", event: createdEvent });
+    }
 
 /////////////////////////////////////////////Event Gets - public, private, rso////////////////////////////////////////////////////
 app.get('/public_events', async (req, res) => {
@@ -502,6 +516,63 @@ app.delete('/delete_comment/:comment_id', async (req, res) => {
   }
 });
 
+//////////////////////////////////////////////requests/////////////////////////////////////////////////////
+// Endpoint to get all event creation requests
+app.get('/requests', async (req, res) => {
+  try {
+      const result = await pool.query('SELECT * FROM public_event_requests');
+      const requests = result.rows;
+      res.json(requests);
+  } catch (err) {
+      console.error('Error fetching event creation requests:', err);
+      res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Endpoint to approve an event creation request
+app.post('/approve_request/:request_id', async (req, res) => {
+  const { request_id } = req.params;
+  try {
+      // Retrieve the request details
+      const requestResult = await pool.query('SELECT * FROM public_event_requests WHERE request_id = $1', [request_id]);
+      const request = requestResult.rows[0];
+      if (!request) {
+          return res.status(404).json({ error: "Request not found" });
+      }
+
+      // Insert the event into the events table
+      const { name, category, description, timestamp, location, contact_phone, contact_email, university_id, user_id } = request;
+      const insertResult = await pool.query(
+          'INSERT INTO events (name, category, description, timestamp, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event, rso_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, false, null) RETURNING *',
+          [name, category, description, timestamp, location, contact_phone, contact_email, university_id, user_id]
+      );
+
+      // Delete the request from the requests table
+      await pool.query('DELETE FROM public_event_requests WHERE request_id = $1', [request_id]);
+
+      const createdEvent = insertResult.rows[0];
+      res.json({ message: "Event created successfully", event: createdEvent });
+  } catch (err) {
+      console.error('Error approving request:', err);
+      res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Endpoint to deny an event creation request
+app.delete('/deny_request/:request_id', async (req, res) => {
+  const { request_id } = req.params;
+  try {
+      // Delete the request from the requests table
+      await pool.query('DELETE FROM public_event_requests WHERE request_id = $1', [request_id]);
+      res.json({ message: "Request denied successfully" });
+  } catch (err) {
+      console.error('Error denying request:', err);
+      res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+
 //////////////////////////////////////////////////Create RSO////////////////////////////////////////////
 // Add RSO (admin) - Only users from the proper university can create an RSO
 app.post('/admin_rsos', isAdmin, async (req, res) => {
@@ -701,3 +772,4 @@ app.delete('/rsos/:rso_id', async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
