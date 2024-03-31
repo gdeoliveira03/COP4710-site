@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import {Link} from 'react-router-dom';
 const EventCreate = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -12,17 +12,32 @@ const EventCreate = () => {
     university_id: '', 
     admin_id: '',
     is_public: true,
-    is_rso_event: false
+    is_rso_event: false,
+    rso_id: ''
   });
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prevState => ({
-      ...prevState,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    if (name === 'is_public' && checked) {
+      setFormData(prevState => ({
+        ...prevState,
+        is_public: true,
+        is_rso_event: false,
+      }));
+    } else if (name === 'is_rso_event' && checked) {
+      setFormData(prevState => ({
+        ...prevState,
+        is_public: false,
+        is_rso_event: true,
+      }));
+    } else {
+      setFormData(prevState => ({
+        ...prevState,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -54,7 +69,8 @@ const EventCreate = () => {
         university_id: '',
         admin_id: '',
         is_public: true,
-        is_rso_event: false
+        is_rso_event: false,
+        rso_id: '',
       });
     } catch (error) {
       setError(error.message || 'Error creating event');
@@ -73,15 +89,24 @@ const EventCreate = () => {
         </div>
         <div>
           <label>Category:</label>
-          <input type="text" name="category" value={formData.category} onChange={handleChange} required />
-        </div>
+          <select name="category" value={formData.category} onChange={handleChange} required>
+    <option value="">Select Category</option>
+    <option value="Seminar">Seminar</option>
+    <option value="TED Talk">TED Talk</option>
+    <option value="Presentation">Presentation</option>
+    <option value="Recreational/Social">Recreational/Social</option>
+    <option value="Exhibition">Exhibition</option>
+    <option value="Promotion">Promotion</option>
+    <option value="Other">Other</option>
+  </select>
+</div>
         <div>
           <label>Description:</label>
           <textarea name="description" value={formData.description} onChange={handleChange} required />
         </div>
         <div>
-          <label>Date:</label>
-          <input type="text" name="timestamp" value={formData.timestamp} onChange={handleChange} required />
+          <label>Date and Time:</label>
+          <input type="datetime-local" name="timestamp" value={formData.timestamp} onChange={handleChange} required />
         </div>
         <div>
           <label>Location:</label>
@@ -111,7 +136,14 @@ const EventCreate = () => {
           <label>Is RSO Event:</label>
           <input type="checkbox" name="is_rso_event" checked={formData.is_rso_event} onChange={handleChange} />
         </div>
+        {formData.is_rso_event && (
+          <div>
+            <label>RSO ID:</label>
+            <input type="text" name="rso_id" value={formData.rso_id} onChange={handleChange} />
+          </div>
+        )}
         <button type="submit">Create Event</button>
+        <Link to="/dashboard">Back to Dashboard</Link>
       </form>
     </div>
   );

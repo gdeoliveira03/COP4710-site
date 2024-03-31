@@ -258,12 +258,18 @@ app.post('/create_event', async (req, res) => {
     } else {
       //event is rso, made by admin
       const result = await pool.query(
-        'INSERT INTO events (name, category, description, time, location, contact_phone, contact_email, admin_id, is_public, is_rso_event, rso_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
-        [name, category, description, time, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event, rso_id]
+        'INSERT INTO events (name, category, description, timestamp, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event, rso_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
+        [name, category, description, timestamp, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event, rso_id]
       );
       const createdEvent = result.rows[0];
       res.json({ message: "Event created successfully", event: createdEvent });
     }
+  } catch (error) {
+    console.error('Error creating event:', error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 
 /////////////////////////////////////////////Event Gets - public, private, rso////////////////////////////////////////////////////
 app.get('/public_events', async (req, res) => {
@@ -772,4 +778,3 @@ app.delete('/rsos/:rso_id', async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-

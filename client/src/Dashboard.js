@@ -1,6 +1,7 @@
 import React from 'react';
 import { useUser } from './Components/CRUD_User/UserContext'; 
 import { Link } from 'react-router-dom';
+import './styles.css';
 
 const Dashboard = () => {
   const { user } = useUser();
@@ -15,9 +16,17 @@ const Dashboard = () => {
           <Link to="/UniCreate">
             <button>Create University</button>
           </Link>
+          {/* Button to list universities */}
+          <Link to="/UniList">
+            <button>University List</button>
+          </Link>
           {/* Button to create event */}
           <Link to="/EventCreate">
             <button>Create Event</button>
+          </Link>
+          {/* Button to see event list */}
+          <Link to="/EventList">
+            <button>Event Lists</button>
           </Link>
         </div>
       )}
