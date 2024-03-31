@@ -13,14 +13,21 @@ import EventList from './Components/CRUD_Events/EventList';
 import UniCreate from './Components/CRUD_University/UniCreate';
 import UniList from './Components/CRUD_University/UniList';
 import { Link } from 'react-router-dom';
+import './styles.css';
 
-
-function LandingPage() {
+const LandingPage = () => {
   return (
-    <div>
-      <h1>Welcome to MyApp</h1>
-      <p>Please <Link to="/login">login</Link> or <Link to="/register">register</Link> to continue.</p>
-
+    <div className="landing-page-text">
+      <h1>Welcome to the UCF Vu! App</h1>
+      <p>
+        This app is designed for social event & club management.
+        Make friends, connect your socials, plan events, create clubs,
+        and more with the Vu! app.
+      </p>
+      <p>
+        Not from UCF? Don’t worry, the Vu! app accepts any university student.
+      </p>
+      <p>Please <a href="/login">login</a> or <a href="/register">register</a> to continue.</p>
     </div>
   );
 };

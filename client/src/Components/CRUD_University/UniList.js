@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 const UniList = () => {
   const [universities, setUniversities] = useState([]);
@@ -42,10 +43,12 @@ const UniList = () => {
             <strong>Location:</strong> {university.location}<br />
             <strong>Description:</strong> {university.description}<br />
             <strong>Number of Students:</strong> {university.num_students}<br />
+            <strong>Nickname:</strong> {university.nickname}<br />
             <hr />
           </li>
         ))}
       </ul>
+      <Link to="/dashboard">Back to Dashboard</Link>
     </div>
   );
 };
