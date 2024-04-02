@@ -613,7 +613,7 @@ app.delete('/deny_request/:request_id', async (req, res) => {
 //////////////////////////////////////////////////Create RSO////////////////////////////////////////////
 // Add RSO (admin) - Only users from the proper university can create an RSO
 app.post('/admin_rsos', isAdmin, async (req, res) => {
-  const { admin_id, name, member_usernames } = req.body;
+  const { admin_id, name, member_usernames, description } = req.body;
 
   try {
     await pool.query('BEGIN');
@@ -654,7 +654,7 @@ app.post('/admin_rsos', isAdmin, async (req, res) => {
     }
 
     // Create RSO
-    const rsoResult = await pool.query('INSERT INTO rsos (university_id, admin_id, name, created_at) VALUES ($1, $2, $3, NOW()) RETURNING rso_id',
+    const rsoResult = await pool.query('INSERT INTO rsos (university_id, admin_id, name, created_at, description) VALUES ($1, $2, $3, NOW(), $4) RETURNING rso_id',
       [universityId, admin_id, name]);
     const rsoId = rsoResult.rows[0].rso_id;
 
@@ -688,10 +688,6 @@ app.post('/rsos/:rso_id/join', async (req, res) => {
     // Retrieve user's email based on the user_id
     const userQuery = await pool.query('SELECT email FROM users WHERE user_id = $1', [user_id]);
     const email = userQuery.rows[0].email;
-
-    if (!email) {
-      return res.status(404).json({ error: "User not found" });
-    }
 
     // Extract university nickname from the email domain
     const atIndex = email.indexOf('@');
@@ -769,24 +765,29 @@ app.post('/rsos/:rso_id/leave', async (req, res) => {
 
 ///////////////////////////////////////////////////////Read RSO (by ID)///////////////////////////////////
 app.get('/rsos', async (req, res) => {
-  const { rso_id } = req.params;
-
   try {
-      // Retrieve RSO details
-      const rsoQuery = await pool.query('SELECT * FROM rsos');
-      const rso = rsoQuery.rows[0];
-    
-      if (!rso) {
-        return res.status(404).json({ error: "RSO not found" });
+    // Retrieve RSO details along with their members
+    const rsoQuery = await pool.query('SELECT r.*, u.username FROM rsos r INNER JOIN rso_memberships m ON r.rso_id = m.rso_id INNER JOIN users u ON m.user_id = u.user_id');
+    const rsos = [];
+
+    rsoQuery.rows.forEach(row => {
+      const { rso_id, name, description, username } = row;
+      const existingRSO = rsos.find(rso => rso.rso_id === rso_id);
+      if (existingRSO) {
+        existingRSO.members.push(username);
+      } else {
+        rsos.push({
+          rso_id,
+          name,
+          description,
+          members: [username]
+        });
       }
-    
-      // Retrieve members of the RSO
-      const membersQuery = await pool.query('SELECT u.username FROM users u INNER JOIN rso_memberships m ON u.user_id = m.user_id');
-      const members = membersQuery.rows.map(row => row.username);
-    
-      res.json({ ...rso, members });
+    });
+
+    res.json(rsos);
   } catch (err) {
-    console.error('Error retrieving RSO', err);
+    console.error('Error retrieving RSOs', err);
     res.status(500).json({ error: "Internal server error" });
   }
 });

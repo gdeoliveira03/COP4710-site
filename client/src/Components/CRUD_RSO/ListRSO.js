@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useUser } from '../ACRUD_User/UserContext'; 
 
 const ListRSOs = () => {
+  const { user } = useUser();
   const [RSOs, setRSOs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [formData] = useState({
-    user_id: ''
-  });
+  const [joinSuccessMessage, setJoinSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchRSOs();
@@ -31,16 +31,17 @@ const ListRSOs = () => {
 
   const handleJoinRSO = async (rsoId) => {
     try {
-      const response = await fetch(`http://localhost:5000/join_rso/${rsoId}`, {
+      const response = await fetch(`http://localhost:5000/rsos/${rsoId}/join`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(formData)
+          body: JSON.stringify({ user_id: user.user_id })
       });
       if (!response.ok) {
         throw new Error('Error joining RSO');
       }
+      setJoinSuccessMessage('Joined RSO successfully');
     } catch (error) {
       // Handle error, such as displaying an error message to the user
       console.error('Error joining RSO:', error.message);
@@ -58,11 +59,16 @@ const ListRSOs = () => {
   return (
     <div>
       <h2>List of Registered Student Organizations</h2>
+      {joinSuccessMessage && <div>{joinSuccessMessage}</div>}
       <ul>
         {RSOs.map(rso => (
           <li key={rso.id}>
-            {rso.name}
-            <button onClick={() => handleJoinRSO(rso.id)}>Join</button>
+            <div>
+              <strong>Name:</strong> {rso.name}<br />
+              <strong>Description:</strong> {rso.description}<br />
+              <strong>Members:</strong> {rso.members.join(', ')}<br />
+              <button onClick={() => handleJoinRSO(rso.rso_id)}>Join</button>
+            </div>
           </li>
         ))}
       </ul>
