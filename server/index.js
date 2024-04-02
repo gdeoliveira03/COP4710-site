@@ -509,6 +509,37 @@ app.get('/get_comments/:event_id', async (req, res) => {
   }
 });
 
+/////////////////////////////////////////////Endpoint to edit a comment/////////////////////////////////////
+app.put('/edit_comment/:comment_id', async (req, res) => {
+  const { comment_id } = req.params;
+  const { content, rating } = req.body;
+
+  try {
+    // Validate the rating if provided
+    const validatedRating = rating ? validateRating(rating) : undefined;
+
+    // Check if the comment exists
+    const commentResult = await pool.query('SELECT * FROM comments WHERE comment_id = $1', [comment_id]);
+    const comment = commentResult.rows[0];
+
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Update the comment with the new content and rating
+    const updateResult = await pool.query(
+      'UPDATE comments SET content = $1, rating = $2 WHERE comment_id = $3 RETURNING *',
+      [content, validatedRating, comment_id]
+    );
+
+    const updatedComment = updateResult.rows[0];
+    res.json({ message: "Comment updated successfully", comment: updatedComment });
+  } catch (err) {
+    console.error('Error editing comment', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 ////////////////////////////////////////////////////////DELETE a comment/////////////////////////////////////
 app.delete('/delete_comment/:comment_id', async (req, res) => {
   const { comment_id } = req.params;
@@ -549,7 +580,7 @@ app.post('/approve_request/:request_id', async (req, res) => {
       // Insert the event into the events table
       const { name, category, description, timestamp, location, contact_phone, contact_email, university_id, user_id } = request;
       const insertResult = await pool.query(
-          'INSERT INTO events (name, category, description, timestamp, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event, rso_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, false, null) RETURNING *',
+          'INSERT INTO events (name, category, description, timestamp, location, contact_phone, contact_email, university_id, admin_id, is_public, is_event, rso_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, false, null) RETURNING *',
           [name, category, description, timestamp, location, contact_phone, contact_email, university_id, user_id]
       );
 
@@ -711,14 +742,38 @@ app.post('/rsos/:rso_id/join', async (req, res) => {
   }
 });
 
+////////////////////////////////////////////////////Leave RSO/////////////////////////////////////////////
+// Endpoint for a user to leave an RSO
+app.post('/rsos/:rso_id/leave', async (req, res) => {
+  const { user_id } = req.body;
+  const { rso_id } = req.params;
+
+  try {
+    // Validate if rso_id exists
+    const rsoQuery = await pool.query('SELECT COUNT(*) FROM rsos WHERE rso_id = $1', [rso_id]);
+    const rsoExists = rsoQuery.rows[0].count > 0;
+    if (!rsoExists) {
+      return res.status(404).json({ error: "RSO not found" });
+    }
+
+    // Delete the user's membership from the RSO
+    await pool.query('DELETE FROM rso_memberships WHERE rso_id = $1 AND user_id = $2', [rso_id, user_id]);
+
+    res.json({ message: "Left RSO successfully" });
+  } catch (err) {
+    console.error('Error leaving RSO', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 
 ///////////////////////////////////////////////////////Read RSO (by ID)///////////////////////////////////
-app.get('/rsos/:rso_id', async (req, res) => {
+app.get('/rsos', async (req, res) => {
   const { rso_id } = req.params;
 
   try {
       // Retrieve RSO details
-      const rsoQuery = await pool.query('SELECT * FROM rsos WHERE rso_id = $1', [rso_id]);
+      const rsoQuery = await pool.query('SELECT * FROM rsos');
       const rso = rsoQuery.rows[0];
     
       if (!rso) {
@@ -726,7 +781,7 @@ app.get('/rsos/:rso_id', async (req, res) => {
       }
     
       // Retrieve members of the RSO
-      const membersQuery = await pool.query('SELECT u.username FROM users u INNER JOIN rso_memberships m ON u.user_id = m.user_id WHERE m.rso_id = $1', [rso_id]);
+      const membersQuery = await pool.query('SELECT u.username FROM users u INNER JOIN rso_memberships m ON u.user_id = m.user_id');
       const members = membersQuery.rows.map(row => row.username);
     
       res.json({ ...rso, members });

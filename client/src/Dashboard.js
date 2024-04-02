@@ -13,9 +13,11 @@ const Dashboard = () => {
         <div>
           <p>Welcome, {user.name}!</p>
           {/* Button to create university */}
-          <Link to="/UniCreate">
-            <button>Create University</button>
-          </Link>
+          {user.isSuperAdmin && (
+            <Link to="/UniCreate">
+              <button>Create University</button>
+            </Link>
+          )}
           {/* Button to list universities */}
           <Link to="/UniList">
             <button>University List</button>
@@ -24,9 +26,11 @@ const Dashboard = () => {
           <Link to="/EventCreate">
             <button>Create Event</button>
           </Link>
-          {/* Button to see event list */}
           <Link to="/EventList">
-            <button>Event Lists</button>
+            <button>Event List</button>
+          </Link>
+          <Link to="/ListRSO">
+            <button>RSO List</button>
           </Link>
         </div>
       )}

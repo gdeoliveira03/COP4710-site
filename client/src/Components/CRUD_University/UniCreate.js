@@ -72,10 +72,6 @@ const UniCreate = () => {
           <label>Number of Students:</label>
           <input type="text" name="num_students" value={formData.num_students} onChange={handleChange} required />
         </div>
-        <div>
-          <label>Superadmin ID:</label>
-          <input type="text" name="superadmin_id" value={formData.superadmin_id} onChange={handleChange} required />
-        </div>
         <button type="submit">Create University</button>
         <Link to="/dashboard">Back to Dashboard</Link>
       </form>
