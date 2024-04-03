@@ -8,6 +8,7 @@ const ListRSOs = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [joinSuccessMessage, setJoinSuccessMessage] = useState('');
+  const [leaveSuccessMessage, setLeaveSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchRSOs();
@@ -43,8 +44,25 @@ const ListRSOs = () => {
       }
       setJoinSuccessMessage('Joined RSO successfully');
     } catch (error) {
-      // Handle error, such as displaying an error message to the user
       console.error('Error joining RSO:', error.message);
+    }
+  };
+
+  const handleLeaveRSO = async (rsoId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/rsos/${rsoId}/leave`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ user_id: user.user_id })
+      });
+      if (!response.ok) {
+        throw new Error('Error leaving RSO');
+      }
+      setLeaveSuccessMessage('Left RSO successfully');
+    } catch (error) {
+      console.error('Error leaving RSO:', error.message);
     }
   };
 
@@ -60,6 +78,7 @@ const ListRSOs = () => {
     <div>
       <h2>List of Registered Student Organizations</h2>
       {joinSuccessMessage && <div>{joinSuccessMessage}</div>}
+      {leaveSuccessMessage && <div>{leaveSuccessMessage}</div>}
       <ul>
         {RSOs.map(rso => (
           <li key={rso.id}>
@@ -67,12 +86,13 @@ const ListRSOs = () => {
               <strong>Name:</strong> {rso.name}<br />
               <strong>Description:</strong> {rso.description}<br />
               <strong>Members:</strong> {rso.members.join(', ')}<br />
-              <button onClick={() => handleJoinRSO(rso.rso_id)}>Join</button>
+              {rso.members.map(member => member.user_id).includes(user.user_id) && <button onClick={() => handleLeaveRSO(rso.rso_id)}>Leave</button>}
+              {rso.members.map(member => member.user_id).includes(user.user_id) && <button onClick={() => handleJoinRSO(rso.rso_id)}>Join</button>}
             </div>
           </li>
         ))}
       </ul>
-      <Link to="/createRSO">Create New RSO</Link>
+      <Link to="/RSOCreate">Create New RSO</Link>
       <Link to="/dashboard">Back to Dashboard</Link>
     </div>
   );

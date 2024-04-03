@@ -12,17 +12,14 @@ const Dashboard = () => {
       {user && (
         <div>
           <p>Welcome, {user.name}!</p>
-          {/* Button to create university */}
           {user.isSuperAdmin && (
             <Link to="/UniCreate">
               <button>Create University</button>
             </Link>
           )}
-          {/* Button to list universities */}
           <Link to="/UniList">
             <button>University List</button>
           </Link>
-          {/* Button to create event */}
           <Link to="/EventCreate">
             <button>Create Event</button>
           </Link>
@@ -32,6 +29,11 @@ const Dashboard = () => {
           <Link to="/ListRSO">
             <button>RSO List</button>
           </Link>
+          {(user.isSuperAdmin || user.isAdmin) && (
+            <Link to="/RSOCreate">
+              <button>Create an RSO</button>
+            </Link>
+          )}
         </div>
       )}
     </div>
