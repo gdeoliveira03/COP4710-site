@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const CreateComment = () => {
   const [formData, setFormData] = useState({
@@ -9,7 +10,7 @@ const CreateComment = () => {
   });
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-
+  const navigate = useNavigate(); 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prevState => ({
@@ -42,9 +43,15 @@ const CreateComment = () => {
         content: '',
         rating: '',
       });
+
+
     } catch (error) {
       setError('Error creating comment');
     }
+  };
+
+  const handleBackToEventList = () => {
+    navigate('/EventList');
   };
 
   return (
@@ -70,6 +77,7 @@ const CreateComment = () => {
           <input type="text" name="rating" value={formData.rating} onChange={handleChange} required />
         </div>
         <button type="submit">Create Comment</button>
+        <button type="button" onClick={handleBackToEventList}>Back to Event List</button>
       </form>
     </div>
   );

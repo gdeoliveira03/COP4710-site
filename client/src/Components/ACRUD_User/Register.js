@@ -31,8 +31,8 @@ const Register = () => {
         return;
       }
 
-      // Redirect to dashboard or login page after successful registration
-      navigate("/dashboard"); //???????????
+      // Redirect to login page after successful registration
+      navigate("/login");
     } catch (error) {
       console.error('Error:', error);
       setError('An unexpected error occurred');

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import ReadComments from '../CRUD_Comments/ReadComments';
 
 const EventList = () => {
   const [events, setEvents] = useState([]);
@@ -50,7 +51,6 @@ const EventList = () => {
   const handleFilterChange = (e) => {
     const { name, checked } = e.target;
     
-    // If a checkbox is checked, uncheck the other checkbox
     if (checked) {
       if (name === 'isRSO') {
         setFilter(prevFilter => ({
@@ -66,7 +66,6 @@ const EventList = () => {
         }));
       }
     } else {
-      // If a checkbox is unchecked, update the filter normally
       setFilter(prevFilter => ({
         ...prevFilter,
         [name]: false
@@ -89,7 +88,6 @@ const EventList = () => {
           const dataPublic = await responsePublic.json();
           const dataRSO = await responseRSO.json();
     
-          // Combine both sets of events
           filtered = [...dataPublic, ...dataRSO];
         } catch (error) {
           console.error('Error fetching events:', error);
@@ -97,7 +95,6 @@ const EventList = () => {
           return;
         }
       } else if (filter.isRSO && !filter.isPublic) {
-        // If only isRSO is checked, fetch RSO events
         const responseRSO = await fetch('http://localhost:5000/rso_events');
         if (!responseRSO.ok) {
           throw new Error('Error fetching RSO events');
@@ -105,7 +102,6 @@ const EventList = () => {
         const dataRSO = await responseRSO.json();
         filtered = dataRSO;
       } else {
-        // Otherwise, apply filters based on the checked checkboxes
         const responsePublic = await fetch('http://localhost:5000/public_events');
         if (!responsePublic.ok) {
           throw new Error('Error fetching public events');
@@ -157,7 +153,9 @@ const EventList = () => {
           Public Event
         </label>
         <button onClick={clearFilter}>Clear Filter</button>
-        <Link to="/dashboard">Back to Dashboard</Link>
+        <Link to="/dashboard">Back to Dashboard</Link>{' '}
+  <Link to="/CreateComment">Create Comment</Link>{' '}
+  <Link to="/DeleteComment">Edit Comments</Link>
       </div>
       <ul>
         {filteredEvents.map(event => (
@@ -172,6 +170,7 @@ const EventList = () => {
           </li>
         ))}
       </ul>
+      <ReadComments />
     </div>
   );
 };
