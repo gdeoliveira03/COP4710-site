@@ -510,6 +510,18 @@ app.get('/get_comments/:event_id', async (req, res) => {
   }
 });
 
+app.get('/get_allcomments', async (req, res) => {
+
+  try {
+    const commentResult = await pool.query('SELECT * FROM comments');
+      const comments = commentResult.rows;
+      res.json(comments);
+  } catch (err) {
+    console.error('Error retrieving comments', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 /////////////////////////////////////////////Endpoint to edit a comment/////////////////////////////////////
 app.put('/edit_comment/:comment_id', async (req, res) => {
   const { comment_id } = req.params;
