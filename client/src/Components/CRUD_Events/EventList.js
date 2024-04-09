@@ -155,7 +155,7 @@ const EventList = () => {
         <button onClick={clearFilter}>Clear Filter</button>
         <Link to="/dashboard">Back to Dashboard</Link>{' '}
   <Link to="/CreateComment">Create Comment</Link>{' '}
-  <Link to="/DeleteComment">Edit Comments</Link>
+  <Link to="/DeleteComment">Edit Your Comments</Link>
       </div>
       <ul>
         {filteredEvents.map(event => (
