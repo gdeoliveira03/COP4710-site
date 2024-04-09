@@ -1,10 +1,10 @@
 import React from 'react';
 import { useUser } from './Components/ACRUD_User/UserContext'; 
-import { Link } from 'react-router-dom';
+import { Link} from 'react-router-dom';
 import './styles.css';
 
 const Dashboard = () => {
-  const { user } = useUser();
+  const { user } = useUser(); 
 
   return (
     <div>
@@ -29,11 +29,12 @@ const Dashboard = () => {
           <Link to="/ListRSO">
             <button>RSO List</button>
           </Link>
-          {(user.isSuperAdmin || user.isAdmin) && (
             <Link to="/RSOCreate">
               <button>Create an RSO</button>
             </Link>
-          )}
+            <Link to="/">
+              <button>Logout</button>
+            </Link>
         </div>
       )}
     </div>

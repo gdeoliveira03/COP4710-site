@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 
 const CreateRSO = () => {
   const [formData, setFormData] = useState({
-    admin_id: '', //retrieve from user context
     name: '',
     description: '',
     member1: '',
     member2: '',
     member3: '',
   });
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,14 +19,17 @@ const CreateRSO = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateFormData()) return;
+
     try {
+      const userId = localStorage.getItem('userId');
       const response = await fetch('http://localhost:5000/admin_rsos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          admin_id: formData.admin_id,
+          admin_id: userId,
           name: formData.name,
           description: formData.description,
           member_usernames: [formData.member1, formData.member2, formData.member3],
@@ -34,16 +38,37 @@ const CreateRSO = () => {
       if (!response.ok) {
         throw new Error('Error creating RSO');
       }
-      // Handle success, e.g., show a success message or redirect to another page
+      // Handle success
+      setSuccessMessage('RSO created successfully');
+      setError(null);
+      setFormData({
+        name: '',
+        description: '',
+        member1: '',
+        member2: '',
+        member3: '',
+      });
     } catch (error) {
-      // Handle error, such as displaying an error message to the user
+      // Handle error
       console.error('Error creating RSO:', error.message);
+      setError('Error creating RSO. Please try again later.');
     }
+  };
+
+  const validateFormData = () => {
+    const { name, description, member1, member2, member3 } = formData;
+    if (!name.trim() || !description.trim() || !member1.trim() || !member2.trim() || !member3.trim()) {
+      setError('All fields are required');
+      return false;
+    }
+    return true;
   };
 
   return (
     <div>
       <h2>Create a New Registered Student Organization</h2>
+      {error && <div style={{ color: 'red' }}>{error}</div>}
+      {successMessage && <div style={{ color: 'green' }}>{successMessage}</div>}
       <form onSubmit={handleSubmit}>
         <div>
           <label htmlFor="name">Name:</label>

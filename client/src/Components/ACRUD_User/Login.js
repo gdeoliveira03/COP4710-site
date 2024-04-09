@@ -10,7 +10,6 @@ const Login = () => {
   const navigate = useNavigate();
   const { setUser } = useUser();
 
-
   const handleLogin = async () => {
     setError('');
 
@@ -29,8 +28,13 @@ const Login = () => {
         return;
       }
 
-      // If login successful, navigate to Profile with username as URL parameter
+      const data = await response.json();
+
+      const userId = data.user.id;
+      localStorage.setItem('userId', userId);
+
       setUser({ name: username });
+
       navigate('/dashboard');
     } catch (error) {
       console.error('Error:', error);

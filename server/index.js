@@ -87,7 +87,7 @@ app.post('/login', async (req, res) => {
   try {
       // Retrieve user from the database
       const result = await pool.query(
-          'SELECT username, password, email, user_type FROM users WHERE username = $1',
+          'SELECT username, password, email, user_type, user_id FROM users WHERE username = $1',
           [username]
       );
 
@@ -121,6 +121,7 @@ app.post('/login', async (req, res) => {
       success: true,
       user: {
           username: user.username,
+          id: user.user_id,
           email: user.email,
           userType: user.user_type,
           university: university
@@ -612,7 +613,7 @@ app.delete('/deny_request/:request_id', async (req, res) => {
 
 //////////////////////////////////////////////////Create RSO////////////////////////////////////////////
 // Add RSO (admin) - Only users from the proper university can create an RSO
-app.post('/admin_rsos', isAdmin, async (req, res) => {
+app.post('/admin_rsos', async (req, res) => {
   const { admin_id, name, member_usernames, description } = req.body;
 
   try {
@@ -655,7 +656,7 @@ app.post('/admin_rsos', isAdmin, async (req, res) => {
 
     // Create RSO
     const rsoResult = await pool.query('INSERT INTO rsos (university_id, admin_id, name, created_at, description) VALUES ($1, $2, $3, NOW(), $4) RETURNING rso_id',
-      [universityId, admin_id, name]);
+      [universityId, admin_id, name, description]);
     const rsoId = rsoResult.rows[0].rso_id;
 
     // Add admin as a member

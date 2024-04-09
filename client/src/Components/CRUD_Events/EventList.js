@@ -8,26 +8,38 @@ const EventList = () => {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [filter, setFilter] = useState({
     category: '',
-    university: '',
     isRSO: false,
-    isPublic: false
+    isPublic: true
   });
 
   useEffect(() => {
     fetchEvents();
-  }, []);
-
+  }, [filter]);
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch('http://localhost:5000/public_events');
-      if (!response.ok) {
-        throw new Error('Error fetching events');
+      let publicEvents = [];
+      let rsoEvents = [];
+
+      if (filter.isPublic) {
+        const publicResponse = await fetch('http://localhost:5000/public_events');
+        if (!publicResponse.ok) {
+          throw new Error('Error fetching public events');
+        }
+        publicEvents = await publicResponse.json();
       }
-  
-      const data = await response.json();
-      setEvents(data);
-      setFilteredEvents(data);
+
+      if (filter.isRSO) {
+        const rsoResponse = await fetch('http://localhost:5000/rso_events');
+        if (!rsoResponse.ok) {
+          throw new Error('Error fetching RSO events');
+        }
+        rsoEvents = await rsoResponse.json();
+      }
+
+      const combinedEvents = [...publicEvents, ...rsoEvents];
+      setEvents(combinedEvents);
+      applyFilters(combinedEvents);
       setLoading(false);
     } catch (error) {
       setError(error.message);
@@ -36,53 +48,92 @@ const EventList = () => {
   };
 
   const handleFilterChange = (e) => {
-    const { name, value, checked } = e.target;
-    if ((name === 'isRSO' && checked) || (name === 'isPublic' && checked)) {
-      // If one of the checkboxes is checked, uncheck the other
-      setFilter(prevFilter => ({
-        ...prevFilter,
-        isRSO: name === 'isRSO' ? checked : false,
-        isPublic: name === 'isPublic' ? checked : false
-      }));
+    const { name, checked } = e.target;
+    
+    // If a checkbox is checked, uncheck the other checkbox
+    if (checked) {
+      if (name === 'isRSO') {
+        setFilter(prevFilter => ({
+          ...prevFilter,
+          isRSO: true,
+          isPublic: false
+        }));
+      } else if (name === 'isPublic') {
+        setFilter(prevFilter => ({
+          ...prevFilter,
+          isRSO: false,
+          isPublic: true
+        }));
+      }
     } else {
-      // Otherwise, update the filter normally
+      // If a checkbox is unchecked, update the filter normally
       setFilter(prevFilter => ({
         ...prevFilter,
-        [name]: name === 'isRSO' || name === 'isPublic' ? checked : value
+        [name]: false
       }));
     }
   };
 
+  const applyFilters = async () => {
+    try {
+      let filtered;
+      if (!filter.isRSO && !filter.isPublic) {
+        try {
+          const responsePublic = await fetch('http://localhost:5000/public_events');
+          const responseRSO = await fetch('http://localhost:5000/rso_events');
+    
+          if (!responsePublic.ok || !responseRSO.ok) {
+            throw new Error('Error fetching events');
+          }
+    
+          const dataPublic = await responsePublic.json();
+          const dataRSO = await responseRSO.json();
+    
+          // Combine both sets of events
+          filtered = [...dataPublic, ...dataRSO];
+        } catch (error) {
+          console.error('Error fetching events:', error);
+          setError('Error fetching events');
+          return;
+        }
+      } else if (filter.isRSO && !filter.isPublic) {
+        // If only isRSO is checked, fetch RSO events
+        const responseRSO = await fetch('http://localhost:5000/rso_events');
+        if (!responseRSO.ok) {
+          throw new Error('Error fetching RSO events');
+        }
+        const dataRSO = await responseRSO.json();
+        filtered = dataRSO;
+      } else {
+        // Otherwise, apply filters based on the checked checkboxes
+        const responsePublic = await fetch('http://localhost:5000/public_events');
+        if (!responsePublic.ok) {
+          throw new Error('Error fetching public events');
+        }
+        const dataPublic = await responsePublic.json();
+        filtered = dataPublic.filter(event => {
+          let condition = true;
+          if (filter.category && event.category !== filter.category) {
+            condition = false;
+          }
+          if (filter.isPublic && !event.is_public) {
+            condition = false;
+          }
+          return condition;
+        });
+      }
+      setFilteredEvents(filtered);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
   const clearFilter = () => {
-    // Reset the filter state
     setFilter({
       category: '',
-      university: '',
       isRSO: false,
       isPublic: false
     });
-  };
-
-  useEffect(() => {
-    // Apply filters when filter state changes
-    applyFilters();
-  }, [filter]);
-
-  const applyFilters = () => {
-    let filtered = events.filter(event => {
-      let condition = true;
-      if (filter.category && event.category !== filter.category) {
-        condition = false;
-      }
-      if (filter.isRSO && !event.is_rso_event) {
-        condition = false;
-      }
-      if (filter.isPublic && !event.is_public) {
-        condition = false;
-      }
-      return condition;
-    });
-    setFilteredEvents(filtered);
   };
 
   if (loading) {
@@ -97,17 +148,6 @@ const EventList = () => {
     <div>
       <h2>Event List</h2>
       <div>
-        <label>Category:</label>
-        <select name="category" value={filter.category} onChange={handleFilterChange}>
-          <option value="">All</option>
-          <option value="Seminar">Seminar</option>
-          <option value="TED Talk">TED Talk</option>
-          <option value="Presentation">Presentation</option>
-          <option value="Recreational/Social">Recreational/Social</option>
-          <option value="Exhibition">Exhibition</option>
-          <option value="Promotion">Promotion</option>
-          <option value="Other">Other</option>
-        </select>
         <label>
           <input type="checkbox" name="isRSO" checked={filter.isRSO} onChange={handleFilterChange} />
           RSO Event
@@ -126,7 +166,7 @@ const EventList = () => {
             <strong>Category:</strong> {event.category}<br />
             <strong>Description:</strong> {event.description}<br />
             <strong>Date:</strong> {new Date(event.timestamp).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}<br />
-    <strong>Time:</strong> {new Date(event.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })}<br />
+            <strong>Time:</strong> {new Date(event.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })}<br />
             <strong>Location:</strong> {event.location}<br />
             <hr />
           </li>
