@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const CreateComment = () => {
+  const userId = localStorage.getItem('userId');
   const [formData, setFormData] = useState({
-    user_id: '',
+    user_id: userId,
     event_id: '',
     content: '',
     rating: '',
@@ -61,10 +62,6 @@ const CreateComment = () => {
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSubmit}>
         <div>
-          <label>User ID:</label>
-          <input type="text" name="user_id" value={formData.user_id} onChange={handleChange} required />
-        </div>
-        <div>
           <label>Event ID:</label>
           <input type="text" name="event_id" value={formData.event_id} onChange={handleChange} required />
         </div>
@@ -73,7 +70,7 @@ const CreateComment = () => {
           <textarea name="content" value={formData.content} onChange={handleChange} required />
         </div>
         <div>
-          <label>Rating:</label>
+          <label>Rating out of 5:</label>
           <input type="text" name="rating" value={formData.rating} onChange={handleChange} required />
         </div>
         <button type="submit">Create Comment</button>

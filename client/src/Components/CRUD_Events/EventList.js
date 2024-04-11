@@ -10,31 +10,42 @@ const EventList = () => {
   const [filter, setFilter] = useState({
     category: '',
     isRSO: false,
-    isPublic: true
+    isPublic: false
   });
 
   useEffect(() => {
     fetchEvents();
   }, [filter]);
 
-  const fetchEvents = async () => {
+  const fetchEvents = async (uniId) => {
+    var uniId = localStorage.getItem('userUniId');
     try {
       let publicEvents = [];
       let rsoEvents = [];
 
       if (filter.isPublic) {
-        const publicResponse = await fetch('http://localhost:5000/public_events');
-        if (!publicResponse.ok) {
-          throw new Error('Error fetching public events');
-        }
+        const publicResponse = await fetch(`http://localhost:5000/public_events/${uniId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+          },
+      });
+      if (!publicResponse.ok) {
+        throw new Error('Error fetching RSO');
+      }
         publicEvents = await publicResponse.json();
       }
 
       if (filter.isRSO) {
-        const rsoResponse = await fetch('http://localhost:5000/rso_events');
-        if (!rsoResponse.ok) {
-          throw new Error('Error fetching RSO events');
-        }
+        const rsoResponse = await fetch(`http://localhost:5000/rso_events/${uniId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+          },
+      });
+      if (!rsoResponse.ok) {
+        throw new Error('Error fetching RSO');
+      }
         rsoEvents = await rsoResponse.json();
       }
 
@@ -73,13 +84,24 @@ const EventList = () => {
     }
   };
 
-  const applyFilters = async () => {
+  const applyFilters = async (uniId) => {
+    var uniId = localStorage.getItem('userUniId');
     try {
       let filtered;
       if (!filter.isRSO && !filter.isPublic) {
         try {
-          const responsePublic = await fetch('http://localhost:5000/public_events');
-          const responseRSO = await fetch('http://localhost:5000/rso_events');
+          const responsePublic = await fetch(`http://localhost:5000/public_events/${uniId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+          },
+      });
+      const responseRSO = await fetch(`http://localhost:5000/rso_events/${uniId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+          },
+      });
     
           if (!responsePublic.ok || !responseRSO.ok) {
             throw new Error('Error fetching events');
@@ -95,14 +117,24 @@ const EventList = () => {
           return;
         }
       } else if (filter.isRSO && !filter.isPublic) {
-        const responseRSO = await fetch('http://localhost:5000/rso_events');
+        const responseRSO = await fetch(`http://localhost:5000/rso_events/${uniId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+          },
+      });
         if (!responseRSO.ok) {
           throw new Error('Error fetching RSO events');
         }
         const dataRSO = await responseRSO.json();
         filtered = dataRSO;
       } else {
-        const responsePublic = await fetch('http://localhost:5000/public_events');
+        const responsePublic = await fetch(`http://localhost:5000/public_events/${uniId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+          },
+      });
         if (!responsePublic.ok) {
           throw new Error('Error fetching public events');
         }

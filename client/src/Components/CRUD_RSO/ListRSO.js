@@ -12,13 +12,19 @@ const ListRSOs = () => {
     fetchRSOs();
   }, []);
 
-  const fetchRSOs = async () => {
+  const fetchRSOs = async (uniId) => {
+    var uniId = localStorage.getItem('userUniId');
     try {
-      const response = await fetch('http://localhost:5000/rsos');
+      const response = await fetch(`http://localhost:5000/rsos/${uniId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+          },
+      });
       if (!response.ok) {
-        throw new Error('Error fetching RSOs');
+        throw new Error('Error fetching RSO');
       }
-  
+
       const data = await response.json();
       setRSOs(data);
       setLoading(false);
@@ -74,6 +80,7 @@ const ListRSOs = () => {
     return <div>Error: {error}</div>;
   }
   const userId = localStorage.getItem('userId');
+  const uniId = localStorage.getItem('userUniId');
   return (
     <div>
       <h2>List of Registered Student Organizations</h2>

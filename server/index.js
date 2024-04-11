@@ -67,6 +67,15 @@ app.post('/signup', async (req, res) => {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Check if the university nickname exists in the database
+    const emailParts = email.split('@');
+    const universityNickname = emailParts[1].split('.')[0];
+    
+    const university = await pool.query('SELECT * FROM universities WHERE nickname = $1', [universityNickname]);
+    if (university.rows.length === 0) {
+      return res.status(400).json({ success: false, message: 'University not found in the database' });
+    }
+
     // Insert user into the database
     const result = await pool.query(
       'INSERT INTO users (username, password, email, user_type) VALUES ($1, $2, $3, $4) RETURNING user_id',
@@ -273,9 +282,9 @@ app.post('/create_event', async (req, res) => {
 
 
 /////////////////////////////////////////////Event Gets - public, private, rso////////////////////////////////////////////////////
-app.get('/public_events', async (req, res) => {
+app.post('/public_events/:uniId', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM events WHERE is_public = true');
+    const result = await pool.query('SELECT * FROM events WHERE is_public = true AND university_id = $1', [university_id]);
     const events = result.rows;
     res.json(events);
   } catch (err) {
@@ -296,9 +305,9 @@ app.get('/private_events/:university_id', async (req, res) => {
   }
 });
 
-app.get('/rso_events', async (req, res) => {
+app.post('/rso_events/:uniId', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM events WHERE is_rso_event = true');
+    const result = await pool.query('SELECT * FROM events WHERE is_rso_event = true AND university_id = $1'[university_id]);
     const events = result.rows;
     res.json(events);
   } catch (err) {
@@ -405,6 +414,24 @@ app.get('/universities', async (req, res) => {
     const result = await pool.query('SELECT * FROM universities');
     const universities = result.rows;
     res.json(universities);
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.get('/universityId/:domainPrefix', async (req, res) => {
+  try {
+    const domainPrefix = req.params.domainPrefix;
+
+    const result = await pool.query('SELECT university_id FROM universities WHERE domain_prefix = $1', [domainPrefix]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "University ID not found for domain prefix" });
+    }
+
+    const universityId = result.rows[0].university_id;
+    res.json({ universityId });
   } catch (err) {
     console.error('Error executing query', err);
     res.status(500).json({ error: "Internal server error" });
@@ -777,26 +804,13 @@ app.post('/rsos/:rso_id/leave', async (req, res) => {
 
 
 ///////////////////////////////////////////////////////Read RSO (by ID)///////////////////////////////////
-app.get('/rsos', async (req, res) => {
+app.post('/rsos/:university_id', async (req, res) => {
+  const { university_id } = req.params;
   try {
     // Retrieve RSO details along with their members
-    const rsoQuery = await pool.query('SELECT r.*, u.username FROM rsos r INNER JOIN rso_memberships m ON r.rso_id = m.rso_id INNER JOIN users u ON m.user_id = u.user_id');
-    const rsos = [];
+    const rsoQuery = await pool.query('SELECT * from rsos WHERE university_id = $1', [university_id]);
+    const rsos = rsoQuery.rows;
 
-    rsoQuery.rows.forEach(row => {
-      const { rso_id, name, description, username } = row;
-      const existingRSO = rsos.find(rso => rso.rso_id === rso_id);
-      if (existingRSO) {
-        existingRSO.members.push(username);
-      } else {
-        rsos.push({
-          rso_id,
-          name,
-          description,
-          members: [username]
-        });
-      }
-    });
 
     res.json(rsos);
   } catch (err) {
