@@ -67,6 +67,15 @@ app.post('/signup', async (req, res) => {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Check if the university nickname exists in the database
+    const emailParts = email.split('@');
+    const universityNickname = emailParts[1].split('.')[0];
+    
+    const university = await pool.query('SELECT * FROM universities WHERE nickname = $1', [universityNickname]);
+    if (university.rows.length === 0) {
+      return res.status(400).json({ success: false, message: 'University not found in the database' });
+    }
+
     // Insert user into the database
     const result = await pool.query(
       'INSERT INTO users (username, password, email, user_type) VALUES ($1, $2, $3, $4) RETURNING user_id',
@@ -87,7 +96,7 @@ app.post('/login', async (req, res) => {
   try {
       // Retrieve user from the database
       const result = await pool.query(
-          'SELECT username, password, email, user_type FROM users WHERE username = $1',
+          'SELECT username, password, email, user_type, user_id FROM users WHERE username = $1',
           [username]
       );
 
@@ -121,6 +130,7 @@ app.post('/login', async (req, res) => {
       success: true,
       user: {
           username: user.username,
+          id: user.user_id,
           email: user.email,
           userType: user.user_type,
           university: university
@@ -272,9 +282,10 @@ app.post('/create_event', async (req, res) => {
 
 
 /////////////////////////////////////////////Event Gets - public, private, rso////////////////////////////////////////////////////
-app.get('/public_events', async (req, res) => {
+app.post('/public_events/:university_id', async (req, res) => {
+  const { university_id } = req.params;
   try {
-    const result = await pool.query('SELECT * FROM events WHERE is_public = true');
+    const result = await pool.query('SELECT * FROM events WHERE is_public = true AND university_id = $1', [university_id]);
     const events = result.rows;
     res.json(events);
   } catch (err) {
@@ -295,9 +306,11 @@ app.get('/private_events/:university_id', async (req, res) => {
   }
 });
 
-app.get('/rso_events', async (req, res) => {
+app.post('/rso_events/:university_id', async (req, res) => {
+  
+  const { university_id } = req.params;
   try {
-    const result = await pool.query('SELECT * FROM events WHERE is_rso_event = true');
+    const result = await pool.query('SELECT * FROM events WHERE is_rso_event = true AND university_id = $1', [university_id]);
     const events = result.rows;
     res.json(events);
   } catch (err) {
@@ -410,6 +423,24 @@ app.get('/universities', async (req, res) => {
   }
 });
 
+app.post('/universityId/:domainPrefix', async (req, res) => {
+  try {
+    const domainPrefix = req.params.domainPrefix;
+
+    const result = await pool.query('SELECT university_id FROM universities WHERE nickname = $1', [domainPrefix]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "University ID not found for domain prefix" });
+    }
+
+    const universityId = result.rows[0].university_id;
+    res.json({ universityId });
+  } catch (err) {
+    console.error('Error executing query', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 ///////////////////////////////////////////Update Uni Info//////////////////////////////////////////////
 app.put('/update_university/:university_id', async (req, res) => {
   const { university_id } = req.params;
@@ -509,6 +540,84 @@ app.get('/get_comments/:event_id', async (req, res) => {
   }
 });
 
+app.get('/get_allcomments', async (req, res) => {
+  try {
+    const commentResult = await pool.query('SELECT c.*, e.name AS event_name, u.username AS user_username FROM comments c JOIN events e ON c.event_id = e.event_id JOIN users u ON c.user_id = u.user_id');
+    const comments = commentResult.rows;
+    res.json(comments);
+  } catch (err) {
+    console.error('Error retrieving comments', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.post('/get_comments_by_event/:event_id', async (req, res) => {
+  const { event_id } = req.params;
+  try {
+    const commentsQuery = `
+      SELECT comments.comment_id, comments.user_id, comments.event_id, comments.content, comments.rating, comments.created_at, users.username
+      FROM comments
+      INNER JOIN users ON comments.user_id = users.user_id
+      WHERE comments.event_id = $1
+    `;
+    const commentResult = await pool.query(commentsQuery, [event_id]);
+    const comments = commentResult.rows;
+    res.json(comments);
+  } catch (err) {
+    console.error('Error retrieving comments', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.post('/get_user_comments/:user_id', async (req, res) => {
+  const { user_id } = req.params;
+  try {
+    const userCommentsQuery = `
+      SELECT comments.comment_id, events.name AS event_name, comments.content, comments.rating
+      FROM comments
+      INNER JOIN events ON comments.event_id = events.event_id
+      WHERE comments.user_id = $1
+    `;
+    const userCommentsResult = await pool.query(userCommentsQuery, [user_id]);
+    const userComments = userCommentsResult.rows;
+    res.json(userComments);
+  } catch (err) {
+    console.error('Error retrieving user comments', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/////////////////////////////////////////////Endpoint to edit a comment/////////////////////////////////////
+app.put('/edit_comment/:comment_id', async (req, res) => {
+  const { comment_id } = req.params;
+  const { content, rating } = req.body;
+
+  try {
+    // Validate the rating if provided
+    const validatedRating = rating ? validateRating(rating) : undefined;
+
+    // Check if the comment exists
+    const commentResult = await pool.query('SELECT * FROM comments WHERE comment_id = $1', [comment_id]);
+    const comment = commentResult.rows[0];
+
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Update the comment with the new content and rating
+    const updateResult = await pool.query(
+      'UPDATE comments SET content = $1, rating = $2 WHERE comment_id = $3 RETURNING *',
+      [content, validatedRating, comment_id]
+    );
+
+    const updatedComment = updateResult.rows[0];
+    res.json({ message: "Comment updated successfully", comment: updatedComment });
+  } catch (err) {
+    console.error('Error editing comment', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 ////////////////////////////////////////////////////////DELETE a comment/////////////////////////////////////
 app.delete('/delete_comment/:comment_id', async (req, res) => {
   const { comment_id } = req.params;
@@ -549,7 +658,7 @@ app.post('/approve_request/:request_id', async (req, res) => {
       // Insert the event into the events table
       const { name, category, description, timestamp, location, contact_phone, contact_email, university_id, user_id } = request;
       const insertResult = await pool.query(
-          'INSERT INTO events (name, category, description, timestamp, location, contact_phone, contact_email, university_id, admin_id, is_public, is_rso_event, rso_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, false, null) RETURNING *',
+          'INSERT INTO events (name, category, description, timestamp, location, contact_phone, contact_email, university_id, admin_id, is_public, is_event, rso_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, false, null) RETURNING *',
           [name, category, description, timestamp, location, contact_phone, contact_email, university_id, user_id]
       );
 
@@ -581,8 +690,8 @@ app.delete('/deny_request/:request_id', async (req, res) => {
 
 //////////////////////////////////////////////////Create RSO////////////////////////////////////////////
 // Add RSO (admin) - Only users from the proper university can create an RSO
-app.post('/admin_rsos', isAdmin, async (req, res) => {
-  const { admin_id, name, member_usernames } = req.body;
+app.post('/admin_rsos', async (req, res) => {
+  const { admin_id, name, member_usernames, description } = req.body;
 
   try {
     await pool.query('BEGIN');
@@ -623,8 +732,8 @@ app.post('/admin_rsos', isAdmin, async (req, res) => {
     }
 
     // Create RSO
-    const rsoResult = await pool.query('INSERT INTO rsos (university_id, admin_id, name, created_at) VALUES ($1, $2, $3, NOW()) RETURNING rso_id',
-      [universityId, admin_id, name]);
+    const rsoResult = await pool.query('INSERT INTO rsos (university_id, admin_id, name, created_at, description) VALUES ($1, $2, $3, NOW(), $4) RETURNING rso_id',
+      [universityId, admin_id, name, description]);
     const rsoId = rsoResult.rows[0].rso_id;
 
     // Add admin as a member
@@ -657,10 +766,6 @@ app.post('/rsos/:rso_id/join', async (req, res) => {
     // Retrieve user's email based on the user_id
     const userQuery = await pool.query('SELECT email FROM users WHERE user_id = $1', [user_id]);
     const email = userQuery.rows[0].email;
-
-    if (!email) {
-      return res.status(404).json({ error: "User not found" });
-    }
 
     // Extract university nickname from the email domain
     const atIndex = email.indexOf('@');
@@ -711,27 +816,60 @@ app.post('/rsos/:rso_id/join', async (req, res) => {
   }
 });
 
-
-///////////////////////////////////////////////////////Read RSO (by ID)///////////////////////////////////
-app.get('/rsos/:rso_id', async (req, res) => {
+////////////////////////////////////////////////////Leave RSO/////////////////////////////////////////////
+// Endpoint for a user to leave an RSO
+app.post('/rsos/:rso_id/leave', async (req, res) => {
+  const { user_id } = req.body;
   const { rso_id } = req.params;
 
   try {
-      // Retrieve RSO details
-      const rsoQuery = await pool.query('SELECT * FROM rsos WHERE rso_id = $1', [rso_id]);
-      const rso = rsoQuery.rows[0];
-    
-      if (!rso) {
-        return res.status(404).json({ error: "RSO not found" });
-      }
-    
-      // Retrieve members of the RSO
-      const membersQuery = await pool.query('SELECT u.username FROM users u INNER JOIN rso_memberships m ON u.user_id = m.user_id WHERE m.rso_id = $1', [rso_id]);
-      const members = membersQuery.rows.map(row => row.username);
-    
-      res.json({ ...rso, members });
+    // Validate if rso_id exists
+    const rsoQuery = await pool.query('SELECT COUNT(*) FROM rsos WHERE rso_id = $1', [rso_id]);
+    const rsoExists = rsoQuery.rows[0].count > 0;
+    if (!rsoExists) {
+      return res.status(404).json({ error: "RSO not found" });
+    }
+
+    // Delete the user's membership from the RSO
+    await pool.query('DELETE FROM rso_memberships WHERE rso_id = $1 AND user_id = $2', [rso_id, user_id]);
+
+    res.json({ message: "Left RSO successfully" });
   } catch (err) {
-    console.error('Error retrieving RSO', err);
+    console.error('Error leaving RSO', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+///////////////////////////////////////////////////////Read RSO (by ID)///////////////////////////////////
+app.post('/rsos/:university_id', async (req, res) => {
+  const { university_id } = req.params;
+  try {
+    // Retrieve RSO details along with their members
+    const rsoQuery = await pool.query('SELECT * FROM rsos WHERE university_id = $1', [university_id]);
+    const rsos = rsoQuery.rows;
+
+    res.json(rsos);
+  } catch (err) {
+    console.error('Error retrieving RSOs', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.post('/rso_members/:rso_id', async (req, res) => {
+  const { rso_id } = req.params;
+  try {
+    // Retrieve user_id from rso_memberships table
+    const rsoQuery = await pool.query('SELECT user_id FROM rso_memberships WHERE rso_id = $1', [rso_id]);
+    const userIDs = rsoQuery.rows.map(row => row.user_id);
+    
+    // Query the users table to get usernames corresponding to the user_ids
+    const userQuery = await pool.query('SELECT username FROM users WHERE user_id = ANY($1)', [userIDs]);
+    const users = userQuery.rows;
+
+    res.json(users);
+  } catch (err) {
+    console.error('Error retrieving RSOs', err);
     res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -1,10 +1,10 @@
 import React from 'react';
-import { useUser } from './Components/CRUD_User/UserContext'; 
-import { Link } from 'react-router-dom';
+import { useUser } from './Components/ACRUD_User/UserContext'; 
+import { Link} from 'react-router-dom';
 import './styles.css';
 
 const Dashboard = () => {
-  const { user } = useUser();
+  const { user } = useUser(); 
 
   return (
     <div>
@@ -12,22 +12,29 @@ const Dashboard = () => {
       {user && (
         <div>
           <p>Welcome, {user.name}!</p>
-          {/* Button to create university */}
-          <Link to="/UniCreate">
-            <button>Create University</button>
-          </Link>
-          {/* Button to list universities */}
+          {user.isSuperAdmin && (
+            <Link to="/UniCreate">
+              <button>Create University</button>
+            </Link>
+          )}
           <Link to="/UniList">
             <button>University List</button>
           </Link>
-          {/* Button to create event */}
           <Link to="/EventCreate">
             <button>Create Event</button>
           </Link>
-          {/* Button to see event list */}
           <Link to="/EventList">
-            <button>Event Lists</button>
+            <button>Event List</button>
           </Link>
+          <Link to="/ListRSO">
+            <button>RSO List</button>
+          </Link>
+            <Link to="/RSOCreate">
+              <button>Create an RSO</button>
+            </Link>
+            <Link to="/">
+              <button>Logout</button>
+            </Link>
         </div>
       )}
     </div>

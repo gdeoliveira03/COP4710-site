@@ -1,10 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { UserProvider } from './Components/CRUD_User/UserContext'; 
+import { UserProvider } from './Components/ACRUD_User/UserContext'; 
 import Dashboard from './Dashboard';
-import Login from './Components/CRUD_User/Login';
-import Register from './Components/CRUD_User/Register';
-import Profile from './Components/CRUD_User/Profile'; 
+import Login from './Components/ACRUD_User/Login';
+import Register from './Components/ACRUD_User/Register';
+import Profile from './Components/ACRUD_User/Profile'; 
 import CreateComment from './Components/CRUD_Comments/CreateComment';
 import DeleteComment from './Components/CRUD_Comments/DeleteComment';
 import ReadComments from './Components/CRUD_Comments/ReadComments';
@@ -12,7 +12,8 @@ import EventCreate from './Components/CRUD_Events/EventCreate';
 import EventList from './Components/CRUD_Events/EventList';
 import UniCreate from './Components/CRUD_University/UniCreate';
 import UniList from './Components/CRUD_University/UniList';
-import { Link } from 'react-router-dom';
+import ListRSO from './Components/CRUD_RSO/ListRSO';
+import RSOCreate from './Components/CRUD_RSO/RSOCreate';
 import './styles.css';
 
 const LandingPage = () => {
@@ -50,7 +51,8 @@ function App() {
           <Route path ="/CreateComment" element={<CreateComment />} />
           <Route path ="/DeleteComment" element={<DeleteComment />} />
           <Route path ="/ReadComments" element={<ReadComments />} />
-
+          <Route path ="/RSOCreate" element={<RSOCreate />} />
+          <Route path ="/ListRSO" element={<ListRSO />} />
         </Routes>
       }
       </UserProvider>

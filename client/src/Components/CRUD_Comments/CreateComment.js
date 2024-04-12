@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const CreateComment = () => {
+  const userId = localStorage.getItem('userId');
   const [formData, setFormData] = useState({
-    user_id: '',
+    user_id: userId,
     event_id: '',
     content: '',
-    rating: '',
+    rating: 0,
   });
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const navigate = useNavigate(); 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -40,11 +43,23 @@ const CreateComment = () => {
         user_id: '',
         event_id: '',
         content: '',
-        rating: '',
+        rating: 0,
       });
+
     } catch (error) {
       setError('Error creating comment');
     }
+  };
+
+  const handleBackToEventList = () => {
+    navigate('/EventList');
+  };
+
+  const handleRatingChange = (rating) => {
+    setFormData(prevState => ({
+      ...prevState,
+      rating: parseInt(rating) // Convert rating to integer
+    }));
   };
 
   return (
@@ -53,10 +68,6 @@ const CreateComment = () => {
       {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSubmit}>
-        <div>
-          <label>User ID:</label>
-          <input type="text" name="user_id" value={formData.user_id} onChange={handleChange} required />
-        </div>
         <div>
           <label>Event ID:</label>
           <input type="text" name="event_id" value={formData.event_id} onChange={handleChange} required />
@@ -67,9 +78,17 @@ const CreateComment = () => {
         </div>
         <div>
           <label>Rating:</label>
-          <input type="text" name="rating" value={formData.rating} onChange={handleChange} required />
+          <select name="rating" value={formData.rating} onChange={handleChange} required>
+            <option value="0">Select Rating</option>
+            <option value="1">1 Star</option>
+            <option value="2">2 Stars</option>
+            <option value="3">3 Stars</option>
+            <option value="4">4 Stars</option>
+            <option value="5">5 Stars</option>
+          </select>
         </div>
         <button type="submit">Create Comment</button>
+        <button type="button" onClick={handleBackToEventList}>Back to Event List</button>
       </form>
     </div>
   );

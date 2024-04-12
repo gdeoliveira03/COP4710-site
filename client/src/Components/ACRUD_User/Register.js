@@ -31,8 +31,8 @@ const Register = () => {
         return;
       }
 
-      // Redirect to dashboard or login page after successful registration
-      navigate('/Dashboard');
+      // Redirect to login page after successful registration
+      navigate("/login");
     } catch (error) {
       console.error('Error:', error);
       setError('An unexpected error occurred');
@@ -59,9 +59,7 @@ const Register = () => {
         <label>User Type:</label>
         <select value={userType} onChange={(e) => setUserType(e.target.value)}>
           <option value="">Select User Type</option>
-          <option value="regular">Student User</option>
-          <option value="admin">Admin User</option>
-          <option value="superAdmin">Super Admin User</option>
+          <option value="student">Student User</option>
         </select>
       </div>
       <button onClick={handleRegister}>Register</button>
