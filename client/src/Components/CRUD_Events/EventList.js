@@ -70,7 +70,7 @@ const EventList = () => {
       return condition;
     });
     if (filter.isRSO) {
-      filtered = filtered.filter(event => event.is_rso);
+      filtered = filtered.filter(event => event.is_rso_event);
     }
     setFilteredEvents(filtered);
   };
