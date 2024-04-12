@@ -7,14 +7,14 @@ const DeleteComment = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [editCommentId, setEditCommentId] = useState(null);
   const [editedComment, setEditedComment] = useState('');
+  const [editedRating, setEditedRating] = useState('');
   const userId = localStorage.getItem('userId');
 
   useEffect(() => {
     fetchUserComments();
   }, []);
 
-  const fetchUserComments = async (userId) => {
-    var userId = localStorage.getItem('userId');
+  const fetchUserComments = async () => {
     try {
       const response = await fetch(`http://localhost:5000/get_user_comments/${userId}`, {
         method: 'POST',
@@ -47,10 +47,10 @@ const DeleteComment = () => {
     }
   };
 
-  const handleEdit = (commentId) => {
+  const handleEdit = (commentId, content, rating) => {
     setEditCommentId(commentId);
-    const commentToEdit = comments.find(comment => comment.comment_id === commentId);
-    setEditedComment(commentToEdit.content);
+    setEditedComment(content);
+    setEditedRating(rating);
   };
 
   const handleUpdate = async () => {
@@ -60,7 +60,7 @@ const DeleteComment = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ content: editedComment })
+        body: JSON.stringify({ content: editedComment, rating: editedRating })
       });
       if (!response.ok) {
         throw new Error('Error updating comment');
@@ -76,28 +76,37 @@ const DeleteComment = () => {
   const handleCancelEdit = () => {
     setEditCommentId(null);
     setEditedComment('');
+    setEditedRating('');
   };
 
   return (
     <div>
-      <h2>All Comments</h2>
+      <h2>All Comments Made</h2>
       <ul>
         {comments.map(comment => (
           <li key={comment.comment_id}>
             <strong>Event Name:</strong> {comment.event_name}<br />
             {editCommentId === comment.comment_id ? (
               <div>
-                <textarea value={editedComment} onChange={(e) => setEditedComment(e.target.value)} />
+                <textarea value={editedComment} onChange={(e) => setEditedComment(e.target.value)} /><br />
+                <select value={editedRating} onChange={(e) => setEditedRating(e.target.value)}>
+                  <option value="1">1 Star</option>
+                  <option value="2">2 Stars</option>
+                  <option value="3">3 Stars</option>
+                  <option value="4">4 Stars</option>
+                  <option value="5">5 Stars</option>
+                </select>
                 <button onClick={handleUpdate}>Update</button>
                 <button onClick={handleCancelEdit}>Cancel</button>
               </div>
             ) : (
               <div>
                 <strong>Comment:</strong> {comment.content}<br />
-                {userId === comment.user_id && (
+                <strong>Rating:</strong> {comment.rating}<br />
+                {userId == userId && (
                   <div>
                     <button onClick={() => handleDelete(comment.comment_id)}>Delete</button>
-                    <button onClick={() => handleEdit(comment.comment_id)}>Edit</button>
+                    <button onClick={() => handleEdit(comment.comment_id, comment.content, comment.rating)}>Edit</button>
                   </div>
                 )}
               </div>
