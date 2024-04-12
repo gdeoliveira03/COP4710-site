@@ -10,7 +10,7 @@ const EventList = () => {
   const [filter, setFilter] = useState({
     category: '',
     isRSO: false,
-    isPublic: false
+    isPublic: true
   });
 
   useEffect(() => {
@@ -23,7 +23,7 @@ const EventList = () => {
       let publicEvents = [];
       let rsoEvents = [];
 
-      if (filter.isPublic) {
+      if (true) {
         const publicResponse = await fetch(`http://localhost:5000/public_events/${uniId}`, {
         method: 'POST',
         headers: {
@@ -36,7 +36,7 @@ const EventList = () => {
         publicEvents = await publicResponse.json();
       }
 
-      if (filter.isRSO) {
+      if (true) {
         const rsoResponse = await fetch(`http://localhost:5000/rso_events/${uniId}`, {
         method: 'POST',
         headers: {

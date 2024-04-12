@@ -282,7 +282,8 @@ app.post('/create_event', async (req, res) => {
 
 
 /////////////////////////////////////////////Event Gets - public, private, rso////////////////////////////////////////////////////
-app.post('/public_events/:uniId', async (req, res) => {
+app.post('/public_events/:university_id', async (req, res) => {
+  const { university_id } = req.params;
   try {
     const result = await pool.query('SELECT * FROM events WHERE is_public = true AND university_id = $1', [university_id]);
     const events = result.rows;
@@ -305,9 +306,11 @@ app.get('/private_events/:university_id', async (req, res) => {
   }
 });
 
-app.post('/rso_events/:uniId', async (req, res) => {
+app.post('/rso_events/:university_id', async (req, res) => {
+  
+  const { university_id } = req.params;
   try {
-    const result = await pool.query('SELECT * FROM events WHERE is_rso_event = true AND university_id = $1'[university_id]);
+    const result = await pool.query('SELECT * FROM events WHERE is_rso_event = true AND university_id = $1', [university_id]);
     const events = result.rows;
     res.json(events);
   } catch (err) {
@@ -420,11 +423,11 @@ app.get('/universities', async (req, res) => {
   }
 });
 
-app.get('/universityId/:domainPrefix', async (req, res) => {
+app.post('/universityId/:domainPrefix', async (req, res) => {
   try {
     const domainPrefix = req.params.domainPrefix;
 
-    const result = await pool.query('SELECT university_id FROM universities WHERE domain_prefix = $1', [domainPrefix]);
+    const result = await pool.query('SELECT university_id FROM universities WHERE nickname = $1', [domainPrefix]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "University ID not found for domain prefix" });
@@ -808,11 +811,28 @@ app.post('/rsos/:university_id', async (req, res) => {
   const { university_id } = req.params;
   try {
     // Retrieve RSO details along with their members
-    const rsoQuery = await pool.query('SELECT * from rsos WHERE university_id = $1', [university_id]);
+    const rsoQuery = await pool.query('SELECT * FROM rsos WHERE university_id = $1', [university_id]);
     const rsos = rsoQuery.rows;
 
-
     res.json(rsos);
+  } catch (err) {
+    console.error('Error retrieving RSOs', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.post('/rso_members/:rso_id', async (req, res) => {
+  const { rso_id } = req.params;
+  try {
+    // Retrieve user_id from rso_memberships table
+    const rsoQuery = await pool.query('SELECT user_id FROM rso_memberships WHERE rso_id = $1', [rso_id]);
+    const userIDs = rsoQuery.rows.map(row => row.user_id);
+    
+    // Query the users table to get usernames corresponding to the user_ids
+    const userQuery = await pool.query('SELECT username FROM users WHERE user_id = ANY($1)', [userIDs]);
+    const users = userQuery.rows;
+
+    res.json(users);
   } catch (err) {
     console.error('Error retrieving RSOs', err);
     res.status(500).json({ error: "Internal server error" });

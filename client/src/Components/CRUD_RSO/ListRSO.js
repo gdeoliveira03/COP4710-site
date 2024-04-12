@@ -27,6 +27,7 @@ const ListRSOs = () => {
 
       const data = await response.json();
       setRSOs(data);
+      console.log(data);
       setLoading(false);
     } catch (error) {
       setError(error.message);
@@ -86,15 +87,15 @@ const ListRSOs = () => {
       <h2>List of Registered Student Organizations</h2>
       {joinSuccessMessage && <div>{joinSuccessMessage}</div>}
       {leaveSuccessMessage && <div>{leaveSuccessMessage}</div>}
-      <ul>
+      <ul style={{ padding: '0', listStyleType: 'none' }}>
         {RSOs.map(rso => (
-          <li key={rso.id}>
+          <li key={rso.id} style={{ marginBottom: '20px' }}>
             <div>
               <strong>Name:</strong> {rso.name}<br />
               <strong>Description:</strong> {rso.description}<br />
-              <strong>Members:</strong> {rso.members.join(', ')}<br />
-              {!rso.members.map(member => member.user_id).includes(userId) && <button onClick={() => handleLeaveRSO(rso.rso_id)}>Leave</button>}
-              {!rso.members.map(member => member.user_id).includes(userId) && <button onClick={() => handleJoinRSO(rso.rso_id)}>Join</button>}
+              <strong>Members:</strong> {rso.members ? rso.members.join(', ') : 'No members'}<br />
+              {!rso.members || !rso.members.map(member => member.user_id).includes(userId) && <button onClick={() => handleLeaveRSO(rso.rso_id)}>Leave</button>}
+              {!rso.members || !rso.members.map(member => member.user_id).includes(userId) && <button onClick={() => handleJoinRSO(rso.rso_id)}>Join</button>}
             </div>
           </li>
         ))}
@@ -103,6 +104,5 @@ const ListRSOs = () => {
       <Link to="/dashboard">Back to Dashboard</Link>
     </div>
   );
-};
-
+}
 export default ListRSOs;
