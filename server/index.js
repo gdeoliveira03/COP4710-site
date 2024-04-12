@@ -541,13 +541,48 @@ app.get('/get_comments/:event_id', async (req, res) => {
 });
 
 app.get('/get_allcomments', async (req, res) => {
-
   try {
-    const commentResult = await pool.query('SELECT * FROM comments');
-      const comments = commentResult.rows;
-      res.json(comments);
+    const commentResult = await pool.query('SELECT c.*, e.name AS event_name, u.username AS user_username FROM comments c JOIN events e ON c.event_id = e.event_id JOIN users u ON c.user_id = u.user_id');
+    const comments = commentResult.rows;
+    res.json(comments);
   } catch (err) {
     console.error('Error retrieving comments', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.post('/get_comments_by_event/:event_id', async (req, res) => {
+  const { event_id } = req.params;
+  try {
+    const commentsQuery = `
+      SELECT comments.comment_id, comments.user_id, comments.event_id, comments.content, comments.rating, comments.created_at, users.username
+      FROM comments
+      INNER JOIN users ON comments.user_id = users.user_id
+      WHERE comments.event_id = $1
+    `;
+    const commentResult = await pool.query(commentsQuery, [event_id]);
+    const comments = commentResult.rows;
+    res.json(comments);
+  } catch (err) {
+    console.error('Error retrieving comments', err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.post('/get_user_comments/:user_id', async (req, res) => {
+  const { user_id } = req.params;
+  try {
+    const userCommentsQuery = `
+      SELECT comments.comment_id, events.name AS event_name, comments.content, comments.rating
+      FROM comments
+      INNER JOIN events ON comments.event_id = events.event_id
+      WHERE comments.user_id = $1
+    `;
+    const userCommentsResult = await pool.query(userCommentsQuery, [user_id]);
+    const userComments = userCommentsResult.rows;
+    res.json(userComments);
+  } catch (err) {
+    console.error('Error retrieving user comments', err);
     res.status(500).json({ error: "Internal server error" });
   }
 });

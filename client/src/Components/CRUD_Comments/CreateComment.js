@@ -7,11 +7,12 @@ const CreateComment = () => {
     user_id: userId,
     event_id: '',
     content: '',
-    rating: '',
+    rating: 0,
   });
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate(); 
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prevState => ({
@@ -42,9 +43,8 @@ const CreateComment = () => {
         user_id: '',
         event_id: '',
         content: '',
-        rating: '',
+        rating: 0,
       });
-
 
     } catch (error) {
       setError('Error creating comment');
@@ -53,6 +53,13 @@ const CreateComment = () => {
 
   const handleBackToEventList = () => {
     navigate('/EventList');
+  };
+
+  const handleRatingChange = (rating) => {
+    setFormData(prevState => ({
+      ...prevState,
+      rating: parseInt(rating) // Convert rating to integer
+    }));
   };
 
   return (
@@ -70,8 +77,15 @@ const CreateComment = () => {
           <textarea name="content" value={formData.content} onChange={handleChange} required />
         </div>
         <div>
-          <label>Rating out of 5:</label>
-          <input type="text" name="rating" value={formData.rating} onChange={handleChange} required />
+          <label>Rating:</label>
+          <select name="rating" value={formData.rating} onChange={handleChange} required>
+            <option value="0">Select Rating</option>
+            <option value="1">1 Star</option>
+            <option value="2">2 Stars</option>
+            <option value="3">3 Stars</option>
+            <option value="4">4 Stars</option>
+            <option value="5">5 Stars</option>
+          </select>
         </div>
         <button type="submit">Create Comment</button>
         <button type="button" onClick={handleBackToEventList}>Back to Event List</button>

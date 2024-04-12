@@ -39,7 +39,8 @@ const ReadComments = () => {
       <ul>
         {comments.map(comment => (
           <li key={comment.comment_id}>
-            <strong>Event ID:</strong> {comment.event_id}<br />
+            <strong>Username:</strong> {comment.user_username}<br />
+            <strong>Event Name:</strong> {comment.event_name}<br />
             <strong>Comment:</strong> {comment.content}<br />
             <hr />
           </li>

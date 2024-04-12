@@ -7,21 +7,28 @@ const DeleteComment = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [editCommentId, setEditCommentId] = useState(null);
   const [editedComment, setEditedComment] = useState('');
+  const userId = localStorage.getItem('userId');
 
   useEffect(() => {
-    fetchComments();
+    fetchUserComments();
   }, []);
 
-  const fetchComments = async () => {
+  const fetchUserComments = async (userId) => {
+    var userId = localStorage.getItem('userId');
     try {
-      const response = await fetch('http://localhost:5000/get_allcomments');
+      const response = await fetch(`http://localhost:5000/get_user_comments/${userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       if (!response.ok) {
-        throw new Error('Error fetching comments');
+        throw new Error('Error fetching user comments');
       }
       const data = await response.json();
       setComments(data);
     } catch (error) {
-      setError('Error fetching comments');
+      setError('Error fetching user comments');
     }
   };
 
@@ -34,8 +41,7 @@ const DeleteComment = () => {
         throw new Error('Error deleting comment');
       }
       setSuccessMessage('Comment deleted successfully');
-      
-      fetchComments();
+      fetchUserComments();
     } catch (error) {
       setError('Error deleting comment');
     }
@@ -61,7 +67,7 @@ const DeleteComment = () => {
       }
       setSuccessMessage('Comment updated successfully');
       setEditCommentId(null);
-      fetchComments();
+      fetchUserComments();
     } catch (error) {
       setError('Error updating comment');
     }
@@ -78,7 +84,7 @@ const DeleteComment = () => {
       <ul>
         {comments.map(comment => (
           <li key={comment.comment_id}>
-            <strong>Event ID:</strong> {comment.event_id}<br />
+            <strong>Event Name:</strong> {comment.event_name}<br />
             {editCommentId === comment.comment_id ? (
               <div>
                 <textarea value={editedComment} onChange={(e) => setEditedComment(e.target.value)} />
@@ -88,8 +94,12 @@ const DeleteComment = () => {
             ) : (
               <div>
                 <strong>Comment:</strong> {comment.content}<br />
-                <button onClick={() => handleDelete(comment.comment_id)}>Delete</button>
-                <button onClick={() => handleEdit(comment.comment_id)}>Edit</button>
+                {userId === comment.user_id && (
+                  <div>
+                    <button onClick={() => handleDelete(comment.comment_id)}>Delete</button>
+                    <button onClick={() => handleEdit(comment.comment_id)}>Edit</button>
+                  </div>
+                )}
               </div>
             )}
             <hr />
